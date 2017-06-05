@@ -25,5 +25,6 @@ struct fileDirectory{
 	short inodeNum; //索引结点号,占2个字节
 };
 
-char diskName[]="Unix"; //磁盘文件名
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
+short currentFreeBlockNum=20450; //当前可用的文件区空闲盘块数
+
