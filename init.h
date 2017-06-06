@@ -26,5 +26,17 @@ void groupLink(){
 	superStack[0]=50; //超级盘块号栈的栈顶指针,它指示当前栈中尚有的空闲盘块数
 	for(short i=1;i<=50;i++)
 		superStack[i]=30+i;//初始状态时,超级盘块号栈存放的是成组链接法中第一组空闲盘块的盘块号,即31#-80#
-
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error!\n");
+		exit(0);
+	}
+	for(short i=0;i<=50;i++)
+		fprintf(file,"%hd",superStack[i]);
+	fprintf(file,"%hd",currentFreeBlockNum); //在0#中写入当前系统可供分配的文件区空闲盘块数
+	/* 
+	   31# 81# 131#...20381# 20431#(最后一组)都是每组的第一个盘块号,除了20431#,前面的都需要记录后面一组
+	   所有可用的盘块号
+	*/
+	
 }

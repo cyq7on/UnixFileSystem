@@ -19,7 +19,8 @@
 using namespace std;
 typedef unsigned char byte;
 
-/*文件索引结点*/
+/*文件索引结点(存放于系统区1#-20#盘块上)*/
+/*每个索引结点占32Byte,所以一个盘块最多可以存放32个iNode,整个系统最多可以存放640个iNode*/
 struct iNode{
 	byte fileType; //0-普通文件,1-目录文件,2-块设备,3-管道文件
 	short iaddr[13]; //Unix增量式索引组织方式,一共13个地址项,每个地址项占2个字节
@@ -28,7 +29,7 @@ struct iNode{
 };
 
 /*文件目录项*/
-/*每个目录项占16个字节,所以一个盘块(1KB)可以存放64个目录项*/
+/*每个目录项占16个字节,所以一个盘块(1KB)最多可以存放64个目录项*/
 struct fileDirectoryEntry{
 	char fileName[14]; //文件名,占14个字节
 	short inodeNum; //索引结点号,占2个字节
@@ -40,7 +41,11 @@ struct fileDirectory{
 
 };
 
-
+/*
+	明确几个问题,0#是系统超级块,超级块中存放两样东西,一个是超级盘块号栈,另一个是系统当前可供分配
+	的空闲盘块的数目,供建立新文件或者目录时参考,即currentFreeBlockNum.
+*/
+char diskName[]="DISK"; //磁盘名称
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum=20450; //当前可用的文件区空闲盘块数
 
