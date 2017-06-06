@@ -1,14 +1,13 @@
 #ifndef _INCLUDE_XXXXXX01_H_
 #define _INCLUDE_XXXXXX01_H_
 #include "data_structure.h"
-#include <stdlib.h>
 
 /*初始化整个文件系统,创建一个DISK文件,向其中写入20M的'#',将这个DISK文件模拟成一个磁盘*/	
 void init(){
 	FILE *file=fopen(diskName,"w+");
 	//判断'磁盘'(DISK文件)是否打开成功,失败则退出程序
 	if(!file){
-		printf("Error!\n");
+		printf("Error! Can't open the DISK\n");
 		exit(0);
 	}
 	for(int i=0;i<20971520;i++) //向DISK文件中写入20M的'#'
@@ -24,7 +23,7 @@ void groupLink(){
 		superStack[i]=30+i;//初始状态时,超级盘块号栈存放的是成组链接法中第一组空闲盘块的盘块号,即31#-80#
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
-		printf("Error!\n");
+		printf("Error! Can't open the DISK\n");
 		exit(0);
 	}
 	fprintf(file,"%hd ",currentFreeBlockNum); //在0#中写入当前系统可供分配的文件区空闲盘块数
@@ -54,4 +53,8 @@ void groupLink(){
 	fclose(file);
 	/*至此成组链接初始化工作完成*/
 }
+
+
+
+
 #endif

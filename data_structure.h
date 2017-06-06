@@ -18,6 +18,7 @@
 #ifndef _INCLUDE_XXXXXX02_H_
 #define _INCLUDE_XXXXXX02_H_
 #include <stdio.h>
+#include <stdlib.h>
 typedef unsigned char byte;
 
 /*文件索引结点(存放于系统区1#-20#盘块上)*/
@@ -49,5 +50,7 @@ struct fileDirectory{
 char diskName[]="DISK"; //磁盘名称
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum=20450; //当前可用的文件区空闲盘块数
+short currentUsingBlockNum; //当前正在使用的盘块组的第一组的盘块号
+
 
 #endif
