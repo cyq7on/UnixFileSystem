@@ -15,8 +15,9 @@
 	分配方式,它指出一个盘块号,在这个盘块中记录了512个一次间址块的盘块号,每个一次间址块中记录了512
 	个盘块,所以在iaddr(12)中可以支持512*512KB=256MB的文件大小(准确些讲是256MB+512KB+10KB)
 */
-#include <iostream>
-using namespace std;
+#ifndef _INCLUDE_XXXXXX02_H_
+#define _INCLUDE_XXXXXX02_H_
+#include <stdio.h>
 typedef unsigned char byte;
 
 /*文件索引结点(存放于系统区1#-20#盘块上)*/
@@ -49,3 +50,4 @@ char diskName[]="DISK"; //磁盘名称
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum=20450; //当前可用的文件区空闲盘块数
 
+#endif
