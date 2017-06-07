@@ -53,7 +53,9 @@ void groupLink(){
 		的时候意味着已经到了最后一组
 	*/
 	fseek(file,1024*20381,SEEK_SET);
-	fwrite(&BLOCKNUM,2,1,file);	//注意最后一组虽然也是50个盘块,但实际可用的盘块只有49个(superStack[1]用作标志位)
+	short temp=49;
+	fwrite(&temp,2,1,file);	/*注意最后一组虽然也是50个盘块,但实际可用的盘块只有49个(superStack[1]用作标志位)
+							  这也意味着20431#盘块是系统无法使用的一个盘块 */
 	fwrite(&ENDFLAG,2,1,file);	//结束标志位
 	for(short blockNum=20480;blockNum>=20432;blockNum--)
 		fwrite(&blockNum,2,1,file);
