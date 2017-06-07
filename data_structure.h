@@ -17,6 +17,7 @@
 */
 #ifndef _INCLUDE_XXXXXX02_H_
 #define _INCLUDE_XXXXXX02_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 typedef unsigned char byte;
@@ -47,9 +48,12 @@ struct fileDirectory{
 	明确几个问题,0#是系统超级块,超级块中存放两样东西,一个是超级盘块号栈,另一个是系统当前可供分配
 	的空闲盘块的数目,供建立新文件或者目录时参考,即currentFreeBlockNum.
 */
-char diskName[]="DISK"; //磁盘名称
+const char diskName[]="$DISK"; //磁盘名称
+const short BLOCKNUM=50; //Unix成组链接法组织空闲盘块时是将所有空闲盘块划成若干组,在本系统中每组含有50个空闲盘块
+const short ENDFLAG=0; //Unix成组链接法的结束标志位
+const short totalBlockNum=20450; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
-short currentFreeBlockNum=20450; //当前可用的文件区空闲盘块数
+short currentFreeBlockNum; //当前可用的文件区空闲盘块数
 short currentUsingBlockNum; //当前正在使用的盘块组的第一组的盘块号
 
 
