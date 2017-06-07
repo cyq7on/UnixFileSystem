@@ -1,5 +1,7 @@
 #include "format.h"
 #include "data_structure.h"
+#include "init.h"
+
 int main(){
 	init();
 	groupLink();

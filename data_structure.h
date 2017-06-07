@@ -22,17 +22,17 @@
 #include <stdlib.h>
 typedef unsigned char byte;
 
-/*文件索引结点(存放于系统区1#-20#盘块上)*/
-/*每个索引结点占32Byte,所以一个盘块最多可以存放32个iNode,整个系统最多可以存放640个iNode*/
-struct iNode{
+/* 文件索引结点(存放于系统区1#-20#盘块上) */
+/* 每个索引结点占32Byte,所以一个盘块最多可以存放32个iNode,整个系统最多可以存放640个iNode */
+typedef struct iNode{
 	byte fileType; //0-普通文件,1-目录文件,2-块设备,3-管道文件
 	short iaddr[13]; //Unix增量式索引组织方式,一共13个地址项,每个地址项占2个字节
 	int fileLength; //文件长度,以byte为单位
 	byte linkCount; //文件连接计数
-};
+}INODE;
 
-/*文件目录项*/
-/*每个目录项占16个字节,所以一个盘块(1KB)最多可以存放64个目录项*/
+/* 文件目录项 */
+/* 每个目录项占16个字节,所以一个盘块(1KB)最多可以存放64个目录项 */
 struct fileDirectoryEntry{
 	char fileName[14]; //文件名,占14个字节
 	short inodeNum; //索引结点号,占2个字节
@@ -41,7 +41,6 @@ struct fileDirectoryEntry{
 /*文件目录*/
 struct fileDirectory{
 	struct fileDirectoryEntry item[64]; //每个盘块可以存放64个目录项
-
 };
 
 /*
@@ -51,10 +50,16 @@ struct fileDirectory{
 const char diskName[]="$DISK"; //磁盘名称
 const short BLOCKNUM=50; //Unix成组链接法组织空闲盘块时是将所有空闲盘块划成若干组,在本系统中每组含有50个空闲盘块
 const short ENDFLAG=0; //Unix成组链接法的结束标志位
+const byte NORMAL=0; //普通文件
+const byte DIR=1; //目录文件
+const byte BLOCKDEVICE=2; //块设备文件
+const byte PIP=3; //管道文件
 const short totalBlockNum=20450; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum; //当前可用的文件区空闲盘块数
-short currentUsingBlockNum; //当前正在使用的盘块组的第一组的盘块号
+short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
+INODE *currentiNode; //当前的iNode
+
 
 
 #endif
