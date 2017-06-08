@@ -35,22 +35,22 @@ void arrayCopy(short _blockNum){
 }
 
 /* 本函数实现将一个长度为512个元素的short型数组写入$DISK的指定盘块中,Unix混合索引的一级及二级索引分配时使用 */
-void arrayWrite(short array[],short _blockNum){
+void arrayWrite(short _array[],short _blockNum){
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
 	fseek(file,1024*_blockNum,SEEK_SET);
-	fwrite(array,2,512,file);
+	fwrite(_array,2,512,file);
 	fclose(file);
 }
 /* 
 	文件的大小是以Byte为单位给出的,但是对于磁盘空间的分配是以盘块为单位的.
 	本函数实现根据文件的字节长度计算其文件所需的盘块数
 */
-short convertFileLength(short fileLength){
-	return fileLength/1024+1;
+short convertFileLength(short _fileLength){
+	return _fileLength%1024==0?_fileLength/1024:_fileLength/1024+1;
 }
 
 
@@ -78,6 +78,28 @@ short allocateAnEmptyBlock(){
 		currentFreeBlockNum--;
 		return result;
 	}
+}
+
+/* 回收一个盘块 */
+void recycleAnBlock(short _diskNum){
+	if(superStack[0]<=49){
+		superStack[0]++;
+		superStack[superStack[0]]=_diskNum;
+	}
+	/* 如果空闲盘块号栈满,则需要先将空闲盘块号栈的数据写入到新回收的这个盘块中 */
+	else{
+		FILE *file=fopen(diskName,"r+");
+		if(!file){
+			printf("Error! Can't open the $DISK\n");
+			exit(0);
+		}
+		fseek(file,1024*_diskNum,SEEK_SET);
+		fwrite(superStack,sizeof(short),51,file);
+		fclose(file);
+		superStack[0]=1;
+		superStack[1]=_diskNum;
+	}
+	currentFreeBlockNum++; //系统空闲盘块数加一
 }
 
 
@@ -294,7 +316,7 @@ void deleteFile(char _fileName[]){
 			/* 如果是目录文件 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
 				/* 对于目录文件的删除,需要检测一下它是否有下属文件或子目录,有的话拒绝执行删除操作 */
-
+				
 			}
 		}
 	}
