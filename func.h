@@ -82,7 +82,7 @@ short allocateAnEmptyBlock(){
 
 /* 在Unix中,iNode是顺序排列的,所以不需要有单独的一个字段来记录iNode号 */
 /* 创建一个iNode结点 */
-void creatiNode(INODE *_inode,byte fileType,short iaddr[],int fileLength,byte linkCount){
+void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 
 	short i=0; //定义一个循环变量
 	_inode->fileType=fileType;
@@ -120,7 +120,7 @@ void creatiNode(INODE *_inode,byte fileType,short iaddr[],int fileLength,byte li
 
 			/* 二级索引分配方式 */
 			if(count>0){
-				_inode->iadr[11]=allocateAnEmptyBlock(); //记录索引块块号的索引块
+				_inode->iaddr[11]=allocateAnEmptyBlock(); //记录索引块块号的索引块
 				short doubleIndirect[512];
 				for(i=0;i<512;i++)
 					doubleIndirect[i]=-1;
@@ -150,6 +150,18 @@ void creatiNode(INODE *_inode,byte fileType,short iaddr[],int fileLength,byte li
 
 	_inode->fileLength=fileLength;
 	_inode->linkCount=linkCount;
+}
+
+
+/* 本函数将iNode写入系统iNode区(1#-20#盘块) */
+void writeiNode(INODE *_inode){
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	fseek(file,,SEEK_SET);
+
 }
 
 #endif
