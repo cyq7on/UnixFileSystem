@@ -18,6 +18,7 @@ void load(){
  	fclose(file);
 }
 
+
 /*
 	成组链接法中,当一组盘块已经分配完,则需要将下一组盘块的第一个盘块中记录的信息调入超级盘块号栈,因为这个
 	操作经常被使用,因而将其封装成一个函数,每次要进行此操作时可调用本函数完成
@@ -164,24 +165,116 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 
 }*/
 
+
 /* 创建文件,需要给出文件名和文件长度 */
 /* 创建目录文件的函数待会单独写,这个函数的参数列表不给出文件类型,默认就是NORMAL类文件 */
-bool creatFile(char _fileName[],int _fileLength){
+/* 
+   本函数的返回值将作为本次操作的状态码传递给调用者供其参考
+   -1:文件重名,操作失败
+    0:系统空间不足,操作失败
+    1:操作成功
+*/
+int creatFile(char _fileName[],int _fileLength){
+	/* 
+	   创建文件需要先扫描一下同级目录中有没有同名文件,如果有同名的需要再判断一下这个文件是目录
+	   文件还是普通文件,同一目录下允许子目录和其中的文件同名,对于NORMAL类文件如果出现重名则拒绝
+	   执行文件创建操作.
+	*/
+	short tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+		tempLength=640;
+	else
+		tempLength=128;
+	for(short i=0;i<tempLength;i++){
+		if(!strcmp(currentDIR[i].fileName,_fileName)){  //发现同名项
+			/* 如果这个同名项是目录,那么允许同名 */
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY) 
+				continue; //这里不能直接break,因为必须要扫描完整个目录
+			/* 出现同名文件了 */
+			else
+				return -1; 
+		} 
 
+	}
 	/* 先根据文件的字节长度计算该文件所需要占用的盘块数目 */
 	int fileLength=convertFileLength(_fileLength);
 	/* 文件长度如果超过剩余盘块数或者系统当前iNode已经用尽则无法再分配 */
-	if(fileLength<currentFreeBlockNum||currentiNodeNum>=640){
-		printf("Sorry,There is no spare disk block available for distribution!\n");
-		return false;
-	}
+	if(fileLength>currentFreeBlockNum||currentFreeiNodeNum==0)
+		//printf("Sorry,There is no spare disk block available for distribution!\n");
+		return 0;
 
-	/* 创建一个文件需要先申请iNode而后填写目录项,两个操作的顺序的不能颠倒 */
+	/* 创建一个文件需要先申请iNode而后填写目录项,两个操作的顺序不能颠倒 */
 
 	/* 申请iNode */
-	creatiNode(&systemiNode[currentiNodeNum++],NORMAL,_fileLength,1);
+	/* 如何获取一个空白iNode号是一个值得考虑的问题,暂时采用线性扫描法 */
+	short tempiNodeNum=-1; //这个变量用来记录分配到的iNode号
+	for(short i=0;i<640;i++,tempiNodeNum++){
+		if(systemiNode[i].fileLength==-1)
+			break;
+	}
+	creatiNode(&systemiNode[tempiNodeNum],NORMAL,_fileLength,1);
+	currentiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	
+	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
+	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
+	for(short i=0;i<tempLength;i++,tempDirNum++){
+		if(currentDIR[i].inodeNum==-1)
+			break;
+	}
+	strcpy(currentDIR[tempDirNum].fileName,_fileName);
+	/* 写入iNode编号 */ 
+	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
+
+	//文件创建工作完成
+	return 1;
 }
+
+/* 创建一个子目录 */
+/* 'Linux/Unix一切皆文件',所以对于目录的创建和普通文件有些类似 同样也会因为空间或者iNode耗尽而无法创建 */
+int creatDir(char _dirName[]){
+	short tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+		tempLength=640;
+	else
+		tempLength=128;
+
+	/* 检测当前路径下是否有同名的目录项 */
+	for(short i=0;i<tempLength;i++){
+		/* 对于目录来说,在同一级目录下出现同名,可以直接拒绝执行 */
+		if(!strcmp(currentDIR[i].fileName,_dirName))
+			return -1;
+	}
+
+	/* 在本系统中,每个子目录分配4个盘块 */
+	if(currentFreeBlockNum<4||currentFreeiNodeNum==0)
+		//printf("Sorry,There is no spare disk block available for distribution!\n");
+		return 0;
+
+	/* 重名问题以及空间问题已经检查完毕,下面开始正式创建 */
+	
+
+}
+
+
+/* 删除当前目录下的指定文件 */
+void deleteFile(char _fileName[]){
+	short tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+		tempLength=640;
+	else
+		tempLength=128;
+	for(short i=0;i<tempLength;i++){
+		if(!strcmp(currentDIR[i].fileName,_fileName)){
+			/* 需要判断一下被删除的目标文件是目录文件还是非目录文件 */
+
+			/* 如果是目录文件 */
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
+				/* 对于目录文件的删除,需要检测一下它是否有下属文件或子目录,有的话拒绝执行删除操作 */
+
+			}
+		}
+	}
+}
+
 #endif

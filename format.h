@@ -3,7 +3,7 @@
 
 #include "data_structure.h"
 
-/* 初始化整个文件系统,创建一个$DISK文件,向其中写入20M的'#',将这个$DISK文件模拟成一个磁盘 */	
+/* 初始化整个文件系统,创建一个$DISK文件,向其中写入20M的' ',将这个$DISK文件模拟成一个磁盘 */	
 void init(){
 	FILE *file=fopen(diskName,"w+"); //格式化磁盘,以'w+'方式打开文件,文件内容会被全部清空
 	//判断'磁盘'($DISK文件)是否打开成功,失败则退出程序
@@ -108,6 +108,9 @@ void format(){
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(systemiNode,sizeof(INODE),640,file);
 	fclose();
+
+	/* 将数据加载到内存 */
+	//load();
 }
 
 
