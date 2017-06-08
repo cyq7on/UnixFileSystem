@@ -11,9 +11,9 @@ void init(){
 		printf("Error  Can't open the $DISK\n");
 		exit(0);
 	}
-	char character='#';
+	char character=' ';
 	for(int i=0;i<20971520;i++)
-		fwrite(&character,1,1,file); //向$DISK文件中写入20M的'#'
+		fwrite(&character,1,1,file); //向$DISK文件中写入20M的空白符
 	fclose(file);
 }
 
@@ -61,6 +61,53 @@ void groupLink(){
 		fwrite(&blockNum,2,1,file);
 	fclose(file);
 	/*至此成组链接初始化工作完成*/
+}
+
+/* 系统格式化的时候,需要初始化根目录,'Linux/Unix一切皆文件',因而根目录也是作为一个文件来处理 */
+/* 对于根目录,它作为一个文件也需要一个索引结点,本函数为根目录分配索引结点 */
+void initialRootDIR(){
+	systemiNode[0]->fileType=DIRECTORY;
+	for(short i=0;i<10;i++)
+		systemiNode[0]->iaddr[i]=i+21; //根目录占用的盘块是21#-30#
+	systemiNode[0]->iaddr[10]=-1; //结束标志
+	systemiNode[0]->fileLength=10240;
+	systemiNode[0]->linkCount=0; /* 这里有疑问 暂时保留这个问题 */
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	fseek(file,1024*1,SEEK_SET);
+	fwrite(&systemiNode[0],sizeof(INODE),1,file);
+	fclose(file);
+	//currentiNodeNum=1;
+}
+
+/* 格式化磁盘,这是一个'危险'的动作,执行此函数将抹掉系统所有数据,并将系统还原到初始状态 */
+/* 格式化操作以后,根目录区以及iNode区的所有空白项都被打上了-1标志,分配空间时以此为参考 */
+void format(){
+	/* 清空数据 */
+	init();
+
+	/* 成组链接初始化 */
+	groupLink();
+
+	/* 初始化系统根目录以及iNode */
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	for(short i=0;i<640;i++)
+		rootDIR[i].inodeNum=-1;
+	fseek(file,1024*21,SEEK_SET);
+	fwrite(rootDIR,sizeof(dirItem),640,file);
+	for(short i=0;i<640;i++)
+		systemiNode[i].fileLength=-1;
+	initialRootDIR(); //为根目录分配iNode
+	fseek(file,1024*1,SEEK_SET);
+	fwrite(systemiNode,sizeof(INODE),640,file);
+	fclose();
 }
 
 

@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 typedef unsigned char byte;
 
 /* 文件索引结点(存放于系统区1#-20#盘块上) */
@@ -33,15 +34,15 @@ typedef struct iNode{
 
 /* 文件目录项 */
 /* 每个目录项占16个字节,所以一个盘块(1KB)最多可以存放64个目录项 */
-struct fileDirectoryEntry{
+typedef struct fileDirectoryEntry{
 	char fileName[14]; //文件名,占14个字节
 	short inodeNum; //索引结点号,占2个字节
-};
+}dirItem;
 
 /*文件目录*/
-struct fileDirectory{
+/*struct fileDirectory{
 	struct fileDirectoryEntry item[64]; //每个盘块可以存放64个目录项
-};
+};*/
 
 /*
 	明确几个问题,0#是系统超级块,超级块中存放两样东西,一个是超级盘块号栈,另一个是系统当前可供分配
@@ -51,14 +52,19 @@ const char diskName[]="$DISK"; //磁盘名称
 const short BLOCKNUM=50; //Unix成组链接法组织空闲盘块时是将所有空闲盘块划成若干组,在本系统中每组含有50个空闲盘块
 const short ENDFLAG=0; //Unix成组链接法的结束标志位
 const byte NORMAL=0; //普通文件
-const byte DIR=1; //目录文件
+const byte DIRECTORY=1; //目录文件
 const byte BLOCKDEVICE=2; //块设备文件
 const byte PIP=3; //管道文件
 const short totalBlockNum=20450; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
 short superStack[51]; //超级盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
-short currentFreeBlockNum; //当前可用的文件区空闲盘块数
+short currentFreeBlockNum; //系统当前的文件区空闲盘块数
 short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
-INODE *currentiNode; //当前的iNode
+INODE systemiNode[640]; //系统iNode栈,1#-20#盘块是iNode区,本文件系统至多支持640个文件
+short currentiNodeNum=0; //当前的iNode号,初始状态为0
+short currentDIRNum=0; //当前的目录项号,初始状态为0
+dirItem rootDIR[640]; //系统根目录栈,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包块子目录)
+dirItem *currentDIR=rootDIR; //当前的目录
+INODE *currentiNode;
 
 
 

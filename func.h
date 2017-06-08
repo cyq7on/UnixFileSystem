@@ -93,7 +93,7 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	for(i=0;i<13;i++)
 		_inode->iaddr[i]=-1;
 	/* 如果该文件是目录文件,那么分配4个盘块 */
-	if(fileType==1){
+	if(fileType==DIRECTORY){
 		for(i=0;i<4;i++)
 			_inode->iaddr[i]=allocateAnEmptyBlock();
 	}
@@ -154,14 +154,34 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 
 
 /* 本函数将iNode写入系统iNode区(1#-20#盘块) */
-void writeiNode(INODE *_inode){
+/*void writeiNode(INODE *_inode){
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
-	fseek(file,,SEEK_SET);
+	fseek(file,1024*10+currentiNodeNum*sizeof(INODE),SEEK_SET);
 
+}*/
+
+/* 创建文件,需要给出文件名和文件长度 */
+/* 创建目录文件的函数待会单独写,这个函数的参数列表不给出文件类型,默认就是NORMAL类文件 */
+bool creatFile(char _fileName[],int _fileLength){
+
+	/* 先根据文件的字节长度计算该文件所需要占用的盘块数目 */
+	int fileLength=convertFileLength(_fileLength);
+	/* 文件长度如果超过剩余盘块数或者系统当前iNode已经用尽则无法再分配 */
+	if(fileLength<currentFreeBlockNum||currentiNodeNum>=640){
+		printf("Sorry,There is no spare disk block available for distribution!\n");
+		return false;
+	}
+
+	/* 创建一个文件需要先申请iNode而后填写目录项,两个操作的顺序的不能颠倒 */
+
+	/* 申请iNode */
+	creatiNode(&systemiNode[currentiNodeNum++],NORMAL,_fileLength,1);
+
+	/* 申请目录项 */
+	
 }
-
 #endif
