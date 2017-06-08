@@ -252,7 +252,30 @@ int creatDir(char _dirName[]){
 		return 0;
 
 	/* 重名问题以及空间问题已经检查完毕,下面开始正式创建 */
-	
+
+	/* 申请iNode */
+	/* 如何获取一个空白iNode号是一个值得考虑的问题,暂时采用线性扫描法 */
+	short tempiNodeNum=-1; //这个变量用来记录分配到的iNode号
+	for(short i=0;i<640;i++,tempiNodeNum++){
+		if(systemiNode[i].fileLength==-1)
+			break;
+	}
+	creatiNode(&systemiNode[tempiNodeNum],DIRECTORY,1024*4,1);
+	currentiNodeNum--; //当前可用的iNode数量减一
+
+	/* 申请目录项 */
+	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
+	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
+	for(short i=0;i<tempLength;i++,tempDirNum++){
+		if(currentDIR[i].inodeNum==-1)
+			break;
+	}
+	strcpy(currentDIR[tempDirNum].fileName,_dirName);
+	/* 写入iNode编号 */ 
+	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
+
+	//目录创建工作完成
+	return 1;
 
 }
 
