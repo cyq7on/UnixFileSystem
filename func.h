@@ -104,8 +104,16 @@ void recycleAnBlock(short _diskNum){
 
 
 /* 在Unix中,iNode是顺序排列的,所以不需要有单独的一个字段来记录iNode号 */
-/* 创建一个iNode结点 */
-void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
+/* 创建一个iNode结点,并分配所需盘块 */
+/* 状态码:
+   403: iNode或系统空闲盘块已耗尽,无法创建新的iNode
+   0: 操作成功
+*/
+int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
+
+	/* 如果系统iNode已经用完,则iNode创建操作失败 */
+	if(currentFreeiNodeNum==0)
+		return 403;
 
 	short i=0; //定义一个循环变量
 	_inode->fileType=fileType;
@@ -118,6 +126,11 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	/* 如果该文件是目录文件,那么分配4个盘块 */
 	/* 创建目录文件不仅仅是分配盘块,还要初始化目录项 */
 	if(fileType==DIRECTORY){
+
+		/* 如果系统可用空闲盘块数不足4个,则无法创建目录,本次操作失败 */
+		if(currentFreeBlockNum<4)
+			return 403;
+
 		dirItem tempOneBlockDir[64];
 		FILE *file=fopen(diskName,"r+");
 		if(!file){
@@ -139,6 +152,25 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	/* Unix采用混合索引方式,因而对于文件的分配是一个相对复杂的过程 */
 	else{
 		short count=convertFileLength(fileLength); //计算需要分配给文件的盘块数
+
+		/* 先计算此次分配所需使用的盘块数,注意Unix采用混合索引分配方式,因而计算所需盘块数时要考虑索引块*/
+		int needIndexBlockNum; 
+
+		/* 直接分配 */
+		if(count<=10)
+			needIndexBlockNum=0;
+		/* 一次间址分配 */
+		else if(count>10&&count<=512+10)
+			needIndexBlockNum=1;
+		/* 二次间址分配 */
+		else if(count>512+10&&count<=512*512+512+10)
+			needIndexBlockNum=512+1+1;
+		//......
+		//本系统最多到二次间址分配方式
+
+		/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目,则此次分配失败 */
+		if(currentFreeBlockNum<needIndexBlockNum+count)
+			return 403;
 
 		/* 直接寻址方式 */
 		for(i=0;i<10&&count>0;i++,count--)
@@ -188,31 +220,19 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 
 	_inode->fileLength=fileLength;
 	_inode->linkCount=linkCount;
+
+	/* 本次操作成功 */
+	return 0;
 }
-
-/* 回收一个iNode */
-void cleaniNode(){
-
-}
-/* 本函数将iNode写入系统iNode区(1#-20#盘块) */
-/*void writeiNode(INODE *_inode){
-	FILE *file=fopen(diskName,"r+");
-	if(!file){
-		printf("Error! Can't open the $DISK\n");
-		exit(0);
-	}
-	fseek(file,1024*10+currentiNodeNum*sizeof(INODE),SEEK_SET);
-
-}*/
 
 
 /* 创建文件,需要给出文件名和文件长度 */
 /* 创建目录文件的函数待会单独写,这个函数的参数列表不给出文件类型,默认就是NORMAL类文件 */
 /* 
    本函数的返回值将作为本次操作的状态码传递给调用者供其参考
-   -1: 文件重名,操作失败
-    0: 系统空间不足,操作失败
-    1: 操作成功
+   500: 文件重名,操作失败
+   403: 系统空间不足,操作失败
+    0 : 操作成功
 */
 int creatFile(char _fileName[],int _fileLength){
 	/* 
@@ -232,16 +252,41 @@ int creatFile(char _fileName[],int _fileLength){
 				continue; //这里不能直接break,因为必须要扫描完整个目录
 			/* 出现同名文件了 */
 			else
-				return -1; 
+				return 500; 
 		} 
 
 	}
 	/* 先根据文件的字节长度计算该文件所需要占用的盘块数目 */
-	int fileLength=convertFileLength(_fileLength);
+	short fileLength=convertFileLength(_fileLength);
 	/* 文件长度如果超过剩余盘块数或者系统当前iNode已经用尽则无法再分配 */
-	if(fileLength>currentFreeBlockNum||currentFreeiNodeNum==0)
-		//printf("Sorry,There is no spare disk block available for distribution!\n");
-		return 0;
+	/* 
+	   这里要注意,对于系统是否有足够盘块供文件使用,不能简单地比对系统剩余盘块数和文件所需盘块数
+	   因为对于Unix来说采用增量式索引组织方式,因而计算时应考虑到索引块的存在.
+	*/
+	 /*一个文件需要使用的索引块数(indexBlockNum)和其自身所需盘块数(fileBlockNum)有如下的简单关系:
+
+	   if fileBlockNum<=10 then indexBlockNum==0
+	   else if fileBlockNum>10&&fileBlockNum<=512+10 then indexBlockNum==1
+	   else if fileBlockNum>512+10&&fileBlockNum<512*512+512+10 the indexBlockNum==512+1+1
+	   ......
+	 */
+	int needIndexBlockNum; 
+
+	/* 直接分配 */
+	if(fileLength<=10)
+		needIndexBlockNum=0;
+	/* 一次间址分配 */
+	else if(fileLength>10&&fileLength<=512+10)
+		needIndexBlockNum=1;
+	/* 二次间址分配 */
+	else if(fileLength>512+10&&fileLength<=512*512+512+10)
+		needIndexBlockNum=512+1+1;
+	//......
+	//本系统最多到二次间址分配方式
+
+	/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目,则此次分配失败 */
+	if(currentFreeBlockNum<needIndexBlockNum+count)
+		return 403;
 
 	/* 创建一个文件需要先申请iNode而后填写目录项,两个操作的顺序不能颠倒 */
 
@@ -253,7 +298,7 @@ int creatFile(char _fileName[],int _fileLength){
 			break;
 	}
 	creatiNode(&systemiNode[tempiNodeNum],NORMAL,_fileLength,1);
-	currentiNodeNum--; //当前可用的iNode数量减一
+	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
 	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
@@ -301,7 +346,7 @@ int creatDir(char _dirName[]){
 			break;
 	}
 	creatiNode(&systemiNode[tempiNodeNum],DIRECTORY,1024*4,1);
-	currentiNodeNum--; //当前可用的iNode数量减一
+	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
 	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
@@ -378,6 +423,9 @@ int deleteDir(char _dirName[]){
 				/* StepIII: 回收目录项 */
 				currentDIR[i].inodeNum=-1;
 
+				currentFreeBlockNum+=4; //系统空闲盘块数加四
+				currentFreeiNodeNum++; //系统iNode数加一
+
 				/* 至此,目录回收工作完成 */
 				return 0;
 
@@ -420,14 +468,47 @@ void deleteFile(char _fileName[]){
 
 				/* 直接地址块的回收 */
 				for(j=0;j<10;j++,count--){
-					if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1)
+					if(count==0)
 						return 0;
 					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
 				}
 
+				FILE *file=fopen(diskName,"r+");
+				if(!file){
+					printf("Error! Can't open the $DISK\n");
+					exit(0);
+				}
+
 				/* 一次间址块的回收 */
+				short tempStack[512]; //定义一个临时栈用来暂存从索引块中取出的索引号
 				if(count>0){
-					
+					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[10],SEEK_SET);
+					fread(tempStack,sizeof(short),512,file);
+					for(j=0;j<512;j++,count--){
+						if(count==0){
+							fclose(file);
+							return 0;
+						}
+						recycleAnBlock(tempStack[j]);
+					}
+				}
+
+				/* 二次间址块的回收 */
+				short innerTempStack[512]; //内层临时栈
+				if(count>0){
+					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
+					fread(tempStack,sizeof(short),512,file);
+					for(j=0;j<512;j++){
+						if(tempStack[j]==-1){
+							fclose(file);
+							return 0;
+						}
+						fseek(file,1024*tempStack[j],SEEK_SET);
+						fread(innerTempStack,sizeof(short),512,SEEK_SET);
+						for(short k=0;k<512;k++,count--){
+
+						}
+					}
 				}
 
 
