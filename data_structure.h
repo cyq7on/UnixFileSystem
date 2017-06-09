@@ -64,6 +64,10 @@ dirItem tempDIR[128]; //系统临时目录栈
 dirItem *currentDIR=rootDIR; //当前的目录指针
 char currentDirName[50]; //当前的目录名称
 INODE *currentDiriNode; //指向当前目录的iNode结点,设置这个指针是为了实现将iNode栈的内容写回磁盘
+dirItem *openLinkedListPointer; /* 系统的'打开路径链'的当前结点指针,这是一个在内存中维护的一个双向链表,通过这个链表
+						    	   可以灵活地实现路径的切换,诸如返回上一级目录或者切换到任意目录等等,这个链表的头指
+						           针即是rootDIR */
+
 
 
 

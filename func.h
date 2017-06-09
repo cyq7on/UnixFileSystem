@@ -103,6 +103,29 @@ void shutDown(){
 	fclose(file);
 }
 
+/* 打开目录函数 */
+void openDir(char _dirName){
+	short tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
+		tempLength=640;
+	else
+		tempLength=256;
+	for(short i=0;i<tempLength;i++){
+		if(!strcmp(currentDIR[i].fileName,_dirName)){
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
+				/* 已找到目标目录项 */
+				/* 下一步工作是将该目录的所有项提取到tempDir中 */
+				short count=0;
+				FILE *file=fopen(diskName,"r");
+				for(short j=0;j<4;j++){
+
+				}
+
+			}
+		}
+	}
+}
+
 
 /*
 	成组链接法中,当一组盘块已经分配完,则需要将下一组盘块的第一个盘块中记录的信息调入空闲盘块号栈,因为这个
@@ -665,7 +688,7 @@ void printCurrentDirInfo(){
 
 /* 显示整个文件系统的统计信息 */
 void printSystemInfo(){
-
+	/*  */
 }
 
 #endif
