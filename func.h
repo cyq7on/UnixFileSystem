@@ -6,7 +6,7 @@
 
 #include "data_structure.h"
 
-/* 文件系统'启动'时,将系统的必要信息(如空闲盘块、超级盘块号栈等)加载到内存 */
+/* 文件系统'启动'时,将系统的必要信息(如空闲盘块、空闲盘块号栈等)加载到内存 */
 void load(){
 	FILE *file=fopen(diskName,"r");
 	if(!file){
@@ -14,13 +14,13 @@ void load(){
 		exit(0);
 	}
  	fread(&currentFreeBlockNum,2,1,file);  //读取系统空闲盘块数
- 	fread(superStack,2,BLOCKNUM+1,file);  //加载系统超级盘块号栈
+ 	fread(superStack,2,BLOCKNUM+1,file);  //加载系统空闲盘块号栈
  	fclose(file);
 }
 
 
 /*
-	成组链接法中,当一组盘块已经分配完,则需要将下一组盘块的第一个盘块中记录的信息调入超级盘块号栈,因为这个
+	成组链接法中,当一组盘块已经分配完,则需要将下一组盘块的第一个盘块中记录的信息调入空闲盘块号栈,因为这个
 	操作经常被使用,因而将其封装成一个函数,每次要进行此操作时可调用本函数完成
 */
 void arrayCopy(short _blockNum){
@@ -55,7 +55,7 @@ short convertFileLength(short _fileLength){
 
 
 /* 该函数实现分配一个空闲的文件区盘块,函数返回值是分配的盘块号 */
-/* 该操作需要用到超级盘块号栈 */
+/* 该操作需要用到空闲盘块号栈 */
 short allocateAnEmptyBlock(){
 	short result;
 	/* 正常情况.空闲盘块号栈中的空闲的盘块数大于1 */
@@ -543,7 +543,7 @@ void deleteFile(char _fileName[]){
 }
 
 /* 打印当前目录下的信息 */
-void printInfo(){
+void printCurrentDirInfo(){
 	short tempLength,flag=0;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
@@ -567,6 +567,11 @@ void printInfo(){
 	}
 	if(!flag)
 		printf("The current directory is empty!\n");
+}
+
+/* 显示整个文件系统的统计信息 */
+void printSystemInfo(){
+
 }
 
 #endif

@@ -3,40 +3,43 @@
 
 #include "data_structure.h"
 
+/* 系统初始化函数 */
 /* 初始化整个文件系统,创建一个$DISK文件,向其中写入20M的' ',将这个$DISK文件模拟成一个磁盘 */	
 void init(){
 	FILE *file=fopen(diskName,"w+"); //格式化磁盘,以'w+'方式打开文件,文件内容会被全部清空
 	//判断'磁盘'($DISK文件)是否打开成功,失败则退出程序
 	if(!file){
-		printf("Error  Can't open the $DISK\n");
+		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
 	char character=' ';
 	for(int i=0;i<20971520;i++)
-		fwrite(&character,1,1,file); //向$DISK文件中写入20M的空白符
+		fwrite(&character,sizeof(char),1,file); //向$DISK文件中写入20M的空白符
 	fclose(file);
 }
 
 /* 成组链接法 */
-/* 0#是系统超级块,这个块中存放超级盘块号栈 */
+/* 0#是系统超级块,这个块中存放空闲盘块号栈 */
 /* 注意这个函数并不是在每次启动文件系统的时候调用,而是在格式化文件系统的时候调用 */
-/* 本函数调用以后会同时在内存中加载超级盘块号栈 */
+/* 本函数调用以后会同时在内存中加载空闲盘块号栈 */
 void groupLink(){
-	superStack[0]=50; //超级盘块号栈的栈顶指针,它指示当前栈中尚有的空闲盘块数
+	superStack[0]=50; //空闲盘块号栈的栈顶指针,它指示当前栈中尚有的空闲盘块数
 	/* 
 		注意空闲盘块号栈是一个自底向上生成的一个栈,栈底是superStack[50],栈顶是superStack[0],之所以这样做
 		是为了使盘块分配操作更加简单
 	*/
 	for(short i=1;i<=50;i++)
-		superStack[51-i]=30+i;//初始状态时,超级盘块号栈存放的是成组链接法中第一组空闲盘块的盘块号,即31#-80#
+		superStack[51-i]=30+i;//初始状态时,空闲盘块号栈存放的是成组链接法中第一组空闲盘块的盘块号,即31#-80#
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
-	fwrite(&totalBlockNum,2,1,file);  //在0#中写入系统文件区空闲盘块总数(20450)
-	/*写入系统超级盘块号栈*/
-	fwrite(superStack,2,51,file);
+	/*写入系统空闲盘块号栈*/
+	fwrite(superStack,sizeof(short),51,file);
+	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20450)
+	fwrite(&currentFreeBlockNum,sizeof(short),1,file); //写入当前可用的文件区空闲盘块数
+	fwrite(&currentFreeiNodeNum,sizeof(short),1,file); //写入当前可用的iNode数
 	/* 
 	   31# 81# 131#...20381# 20431#(最后一组)都是每组的第一个盘块号,除了20431#,前面的都需要记录后面一组
 	   所有可用的盘块号
