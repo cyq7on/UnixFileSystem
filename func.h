@@ -190,7 +190,10 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	_inode->linkCount=linkCount;
 }
 
+/* 回收一个iNode */
+void cleaniNode(){
 
+}
 /* 本函数将iNode写入系统iNode区(1#-20#盘块) */
 /*void writeiNode(INODE *_inode){
 	FILE *file=fopen(diskName,"r+");
@@ -317,23 +320,24 @@ int creatDir(char _dirName[]){
 }
 
 
-/* 删除当前目录下的指定文件 */
+/* 删除当前目录下的子目录 */
 /*
    状态码:
-   403: 目标删除项为目录文件且该目录下有子目录或文件,删除操作被拒绝
+   403: 目标删除项下有子目录或文件,删除操作被拒绝
    404: 目标删除项未找到
+   0: 目录删除成功
 */
-int deleteFile(char _fileName[]){
+int deleteDir(char _dirName[]){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
 		tempLength=256;
 	for(short i=0;i<tempLength;i++){
-		if(!strcmp(currentDIR[i].fileName,_fileName)){
-			/* 需要判断一下被删除的目标文件是目录文件还是非目录文件 */
+		if(!strcmp(currentDIR[i].fileName,_dirName)){
+			/* 需要判断一下被删除的目标文件是目录文件还是非目录文件,因为同级路径下允许子目录和文件同名 */
 
-			/* 如果是目录文件 */
+			/* 检测一下是否为目录文件 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
 				/* 对于目录文件的删除,需要检测一下currentDIR[i]是否有下属文件或子目录,有的话拒绝执行删除操作 */
 				/* 将currentDIR[i]的目录项加载到系统临时目录栈 */
@@ -354,19 +358,81 @@ int deleteFile(char _fileName[]){
 				fclose(file);
 
 				/* 此时,current[i]的下属目录项已经全部加载至系统临时目录栈 */
-				/* 下一步工作即是遍历临时目录栈,检测栈中是否有非空项,如果有拒绝则拒绝执行删除操作 */
+				/* 下一步工作即是遍历临时目录栈,检测栈中是否有非空项,如果有则拒绝执行删除操作 */
 				for(short j=0;j<256;j++){
 					if(tempDir[j].inodeNum!=-1)
 						return 403;
 				}
 
-				/* 程序若能执行到此,则说明目标删除项是一个空目录,可以执行删除操作 */
-				
+				/* 程序若能执行至此,则说明目标删除项是一个空目录,可以执行删除操作 */
+				/* 删除操作需要先释放占用的盘块而后释放占用的iNode最后释放目录项 顺序不能乱*/
+
+				/* StepI: 回收盘块 */
+				for(short j=0;j<4;j++){
+					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
+				}
+
+				/* StepII: 释放iNode */
+				systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+
+				/* StepIII: 回收目录项 */
+				currentDIR[i].inodeNum=-1;
+
+				/* 至此,目录回收工作完成 */
+				return 0;
+
+
 			}
 		}
-		/* 未找到这个文件,说明用户输入的参数有错 */
-		/*else
-			return -1;*/
+	}
+	/* 程序若能执行到这里,说明未找到目标项 */
+	return 404;
+}
+
+/* 删除文件 */
+/* 
+   状态码:
+   404: 指定文件未找到,删除操作失败
+   0: 删除成功
+*/
+void deleteFile(char _fileName[]){
+	short tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
+		tempLength=640;
+	else
+		tempLength=256;
+	for(short i=0;i<tempLength;i++){
+		if(!strcmp(currentDIR[i].fileName,_fileName)){
+			/* 同级路径下允许目录名和文件名相同,因此还需要判断一下这个文件是目录文件还是非目录文件*/
+
+			/* 
+				对于目录的删除和普通文件的删除虽然类似但仍有一些较为特殊的差异,因而对于目录的删除我们
+				采用另外一个专门的函数来处理,本函数只负责非目录文件的删除操作
+			*/
+
+			/* 如果不是目录文件,那么开始进行删除操作 */
+			if(systemiNode[currentDIR[i].inodeNum].fileType!=DIRECTORY){
+				/* Unix采用混合索引方式,因而对于盘块的回收和对其分配一样,都是相对较为复杂的操作 */
+
+				/* 先读出该文件的长度,进而计算出它所占用的盘块数目 */
+				short count=convertFileLength(systemiNode[currentDIR[i].inodeNum].fileLength);
+				short j; //定义一个循环变量
+
+				/* 直接地址块的回收 */
+				for(j=0;j<10;j++,count--){
+					if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1)
+						return 0;
+					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
+				}
+
+				/* 一次间址块的回收 */
+				if(count>0){
+					
+				}
+
+
+			}
+		}
 	}
 }
 

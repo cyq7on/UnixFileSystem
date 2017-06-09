@@ -63,6 +63,7 @@ INODE systemiNode[640]; //系统iNode栈,1#-20#盘块是iNode区,本文件系统
 short currentFreeiNodeNum; //当前可供分配的iNode数量
 /*short currentDIRNum=0; //当前的目录项号,初始状态为0*/
 dirItem rootDIR[640]; //系统根目录栈,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包块子目录)
+dirItem tempDIR[128]; //系统临时目录栈
 dirItem *currentDIR=rootDIR; //当前的目录指针
 char currentDirName[50]; //当前的目录名称
 INODE *currentiNode;
