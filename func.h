@@ -116,9 +116,24 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	for(i=0;i<13;i++)
 		_inode->iaddr[i]=-1;
 	/* 如果该文件是目录文件,那么分配4个盘块 */
+	/* 创建目录文件不仅仅是分配盘块,还要初始化目录项 */
 	if(fileType==DIRECTORY){
-		for(i=0;i<4;i++)
+		dirItem tempOneBlockDir[64];
+		FILE *file=fopen(diskName,"r+");
+		if(!file){
+			printf("Error! Can't open the $DISK\n");
+			exit(0);
+		}
+		for(i=0;i<4;i++){
 			_inode->iaddr[i]=allocateAnEmptyBlock();
+			/* 分配完四个盘块以后,将这四个盘块写满空目录项 */
+			for(short k=0;k<64;k++){
+				tempOneBlockDir[k].inodeNum=-1;
+			}
+			fseek(file,1024*_inode->iaddr[i],SEEK_SET);
+			fwrite(tempOneBlockDir,sizeof(dirItem),64,file);
+		}
+		fclose(file);
 	}
 
 	/* Unix采用混合索引方式,因而对于文件的分配是一个相对复杂的过程 */
@@ -192,9 +207,9 @@ void creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 /* 创建目录文件的函数待会单独写,这个函数的参数列表不给出文件类型,默认就是NORMAL类文件 */
 /* 
    本函数的返回值将作为本次操作的状态码传递给调用者供其参考
-   -1:文件重名,操作失败
-    0:系统空间不足,操作失败
-    1:操作成功
+   -1: 文件重名,操作失败
+    0: 系统空间不足,操作失败
+    1: 操作成功
 */
 int creatFile(char _fileName[],int _fileLength){
 	/* 
@@ -203,10 +218,10 @@ int creatFile(char _fileName[],int _fileLength){
 	   执行文件创建操作.
 	*/
 	short tempLength;
-	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
-		tempLength=128;
+		tempLength=256;
 	for(short i=0;i<tempLength;i++){
 		if(!strcmp(currentDIR[i].fileName,_fileName)){  //发现同名项
 			/* 如果这个同名项是目录,那么允许同名 */
@@ -256,10 +271,10 @@ int creatFile(char _fileName[],int _fileLength){
 /* 'Linux/Unix一切皆文件',所以对于目录的创建和普通文件有些类似 同样也会因为空间或者iNode耗尽而无法创建 */
 int creatDir(char _dirName[]){
 	short tempLength;
-	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
-		tempLength=128;
+		tempLength=256;
 
 	/* 检测当前路径下是否有同名的目录项 */
 	for(short i=0;i<tempLength;i++){
@@ -303,22 +318,55 @@ int creatDir(char _dirName[]){
 
 
 /* 删除当前目录下的指定文件 */
-void deleteFile(char _fileName[]){
+/*
+   状态码:
+   403: 目标删除项为目录文件且该目录下有子目录或文件,删除操作被拒绝
+   404: 目标删除项未找到
+*/
+int deleteFile(char _fileName[]){
 	short tempLength;
-	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是128
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
-		tempLength=128;
+		tempLength=256;
 	for(short i=0;i<tempLength;i++){
 		if(!strcmp(currentDIR[i].fileName,_fileName)){
 			/* 需要判断一下被删除的目标文件是目录文件还是非目录文件 */
 
 			/* 如果是目录文件 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
-				/* 对于目录文件的删除,需要检测一下它是否有下属文件或子目录,有的话拒绝执行删除操作 */
+				/* 对于目录文件的删除,需要检测一下currentDIR[i]是否有下属文件或子目录,有的话拒绝执行删除操作 */
+				/* 将currentDIR[i]的目录项加载到系统临时目录栈 */
+				FILE *file=fopen(diskName,"r+");
+				if(!file){
+					printf("Error! Can't open the $DISK\n");
+					exit(0);
+				}
+
+				/* 将四个盘块的目录项数据按照次序读入到系统临时目录栈中 */
+				short tempCount=0; //临时用计数器
+				for(short j=0;j<4;j++){
+					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[j],SEEK_SET);
+					for(short k=0;k<64;k++){
+						fread(&tempDir[tempCount++],sizeof(dirItem),1,file);
+					}
+				}
+				fclose(file);
+
+				/* 此时,current[i]的下属目录项已经全部加载至系统临时目录栈 */
+				/* 下一步工作即是遍历临时目录栈,检测栈中是否有非空项,如果有拒绝则拒绝执行删除操作 */
+				for(short j=0;j<256;j++){
+					if(tempDir[j].inodeNum!=-1)
+						return 403;
+				}
+
+				/* 程序若能执行到此,则说明目标删除项是一个空目录,可以执行删除操作 */
 				
 			}
 		}
+		/* 未找到这个文件,说明用户输入的参数有错 */
+		/*else
+			return -1;*/
 	}
 }
 
