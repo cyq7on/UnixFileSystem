@@ -40,9 +40,11 @@ void groupLink(){
 	totalBlockNum=20449;
 	currentFreeBlockNum=20449;
 	currentFreeiNodeNum=639;
+	systemFileNum=0;
 	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20449)
 	fwrite(&currentFreeBlockNum,sizeof(short),1,file); //写入当前可用的文件区空闲盘块数
 	fwrite(&currentFreeiNodeNum,sizeof(short),1,file); //写入当前可用的iNode数
+	fwrite(&systemFileNum,sizeof(short),1,file); //写入当前系统的文件总数
 	/* 
 	   31# 81# 131#...20381# 20431#(最后一组)都是每组的第一个盘块号,除了20431#,前面的都需要记录后面一组
 	   所有可用的盘块号
@@ -87,7 +89,6 @@ void initialRootDIR(){
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(&systemiNode[0],sizeof(INODE),1,file);
 	fclose(file);*/
-	currentFreeiNodeNum=639; //初始化根目录以后,系统的可用iNode数量为639
 }
 
 /* 格式化磁盘,这是一个'危险'的动作,执行此函数将抹掉系统所有数据,并将系统还原到初始状态 */

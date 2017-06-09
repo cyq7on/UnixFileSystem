@@ -16,13 +16,91 @@ void load(){
 	}
  	fread(superStack,sizeof(short),BLOCKNUM+1,file);  //加载系统空闲盘块号栈
  	fread(&totalBlockNum,sizeof(short),1,file); //读取系统文件区物理盘块总数
- 	fread(&currentFreeBlockNum,sizeof(short),1,file);  //读取系统空闲盘块数
+ 	fread(&currentFreeBlockNum,sizeof(short),1,file);  //读取系统当前空闲盘块数
  	fread(&currentFreeiNodeNum,sizeof(short),1,file); //读取系统当前可用的iNode数目
  	fread(&systemFileNum,sizeof(short),1,file); //读取系统文件总数
  	stackLock=0; //初始化stack排他锁
+ 	fseek(file,1024*1,SEEK_SET);
+ 	fread(systemiNode,sizeof(INODE),640,file); //加载系统iNode栈
+ 	fseek(file,1024*21,SEEK_SET);
+ 	fread(rootDIR,sizeof(dirItem),640,file); //加载系统根目录
  	currentDIR=rootDIR; //初始化当前路径指针
  	currentDirName="/"; //初始化当前路径名
+ 	currentDiriNode=&systemiNode[0]; //初始化当前目录的iNode指针
  	fclose(file);
+}
+
+/* 本函数将iNode栈写回磁盘 */
+/* iNode栈是在内存中维护的一个系统栈,每次有新的改动后最好将其立即写回磁盘,这样可以在一定程度上避免'非法关机'
+   造成的错误
+*/
+void writeiNode(){
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	fseek(file,1024*1,SEEK_SET);
+	fwrite(systemiNode,sizeof(INODE),640,file);
+	fclose(file);
+}
+
+/* 将当前目录栈写回磁盘 */
+/* 根目录栈的写回是比较简单的,因为根目录占用的盘块是确定的(21#-30#)
+   如果是子目录则需要先获取子目录分配到的盘块,再将数据写入
+*/
+void writeCurrentDir(){
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	/* 如果当前目录是系统根目录 */
+	if(!strcmp(currentDirName,"/")){
+		fseek(file,1024*21,SEEK_SET);
+		fwrite(currentDIR,sizeof(dirItem),640,file);
+		fclose(file);
+		return;
+	}
+	/* 如果当前不是在系统根目录下 */
+	else{
+		short i,j,count=0; //设置一个计数变量
+		for(i=0;i<4;i++){
+			fseek(file,1024*(currentDiriNode->iaddr[i]),SEEK_SET);
+			for(j=0;j<64;j++)
+				fwrite(&currentDIR[count++],sizeof(dirItem),1,file);
+		}
+		fclose(file);
+		return;
+	}
+}
+
+
+/* '关机'函数 */
+/* 本函数与'开机'函数(load()函数)相对应,也是本系统一个重要的函数 */
+/* 每次关闭文件系统前,要调用本函数,本函数将系统变量及系统栈写回'磁盘'系统区 */
+void shutDown(){
+	/* 将当前iNode栈写回磁盘 */
+	writeiNode();
+
+	/* 将当前目录栈写回磁盘 */
+	writeCurrentDir();
+
+	/* 将空闲盘块号栈写回磁盘 */
+	FILE *file=fopen(diskName,"r+");
+	if(!file){
+		printf("Error! Can't open the $DISK\n");
+		exit(0);
+	}
+	fseek(file,0,SEEK_SET);
+	fwrite(superStack,sizeof(short),51,file);
+
+	/* 将各个系统变量写回引导区 */
+	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20449)
+	fwrite(&currentFreeBlockNum,sizeof(short),1,file); //写入当前可用的文件区空闲盘块数
+	fwrite(&currentFreeiNodeNum,sizeof(short),1,file); //写入当前可用的iNode数
+	fwrite(&systemFileNum,sizeof(short),1,file); //写入当前系统的文件总数
+	fclose(file);
 }
 
 
@@ -49,7 +127,7 @@ void arrayWrite(short _array[],short _blockNum){
 		exit(0);
 	}
 	fseek(file,1024*_blockNum,SEEK_SET);
-	fwrite(_array,2,512,file);
+	fwrite(_array,sizeof(short),512,file);
 	fclose(file);
 }
 /* 
@@ -484,6 +562,8 @@ void deleteFile(char _fileName[]){
 						currentFreeiNodeNum++;
 						/* 清除目录项 */
 						currentDIR[i].inodeNum=-1;
+						/* 系统文件总数减一 */
+						systemFileNum--;
 						return 0;
 					}
 					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
@@ -507,6 +587,8 @@ void deleteFile(char _fileName[]){
 							currentFreeiNodeNum++;
 							/* 清除目录项 */
 							currentDIR[i].inodeNum=-1;
+							/* 系统文件总数减一 */
+							systemFileNum--;
 							fclose(file);
 							return 0;
 						}
@@ -520,10 +602,10 @@ void deleteFile(char _fileName[]){
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++){
-						if(tempStack[j]==-1){
+						/*if(tempStack[j]==-1){
 							fclose(file);
 							return 0;
-						}
+						}*/
 						fseek(file,1024*tempStack[j],SEEK_SET);
 						fread(innerTempStack,sizeof(short),512,SEEK_SET);
 						for(short k=0;k<512;k++,count--){
@@ -533,6 +615,8 @@ void deleteFile(char _fileName[]){
 								currentFreeiNodeNum++;
 								/* 清除目录项 */
 								currentDIR[i].inodeNum=-1;
+								/* 系统文件总数减一 */
+								systemFileNum--;
 								fclose(file);
 								return 0;
 							}

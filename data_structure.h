@@ -56,12 +56,14 @@ short superStack[51]; //空闲盘块号栈,采用Unix成组链接法组织空闲
 short currentFreeBlockNum; //系统当前的文件区空闲盘块数
 short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
 short stackLock; //空闲盘块号栈是临界资源,这个变量作为空闲盘块号栈的锁,值为1表示已上锁
+short systemFileNum; //记录系统文件总数,打印系统信息时将用到这个变量
 INODE systemiNode[640]; //系统iNode栈,1#-20#盘块是iNode区,本文件系统至多支持640个文件
 short currentFreeiNodeNum; //当前可供分配的iNode数量
 dirItem rootDIR[640]; //系统根目录栈,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包块子目录)
 dirItem tempDIR[128]; //系统临时目录栈
 dirItem *currentDIR=rootDIR; //当前的目录指针
 char currentDirName[50]; //当前的目录名称
+INODE *currentDiriNode; //指向当前目录的iNode结点,设置这个指针是为了实现将iNode栈的内容写回磁盘
 
 
 
