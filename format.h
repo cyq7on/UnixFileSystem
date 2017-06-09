@@ -37,7 +37,10 @@ void groupLink(){
 	}
 	/*写入系统空闲盘块号栈*/
 	fwrite(superStack,sizeof(short),51,file);
-	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20450)
+	totalBlockNum=20449;
+	currentFreeBlockNum=20449;
+	currentFreeiNodeNum=639;
+	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20449)
 	fwrite(&currentFreeBlockNum,sizeof(short),1,file); //写入当前可用的文件区空闲盘块数
 	fwrite(&currentFreeiNodeNum,sizeof(short),1,file); //写入当前可用的iNode数
 	/* 
@@ -48,7 +51,7 @@ void groupLink(){
 		fseek(file,1024*blockNum,SEEK_SET);
 		fwrite(&BLOCKNUM,2,1,file); //先写入栈顶指针,除了最后一组,前面各组的栈顶指针值都是50
 		for(short nextGroupBlockNum=blockNum+50+49;nextGroupBlockNum>=blockNum+50;nextGroupBlockNum--)
-			fwrite(&nextGroupBlockNum,2,1,file);
+			fwrite(&nextGroupBlockNum,sizeof(short),1,file);
 	}
 	/*
 		最后一组比较特殊,单独拿出来处理,要注意对于每个盘块号栈,superStack[1]指示的是下一组第一个盘块
@@ -57,17 +60,18 @@ void groupLink(){
 	*/
 	fseek(file,1024*20381,SEEK_SET);
 	short temp=49;
-	fwrite(&temp,2,1,file);	/*注意最后一组虽然也是50个盘块,但实际可用的盘块只有49个(superStack[1]用作标志位)
+	fwrite(&temp,sizeof(short),1,file);	/*注意最后一组虽然也是50个盘块,但实际可用的盘块只有49个(superStack[1]用作标志位)
 							  这也意味着20431#盘块是系统无法使用的一个盘块 */
-	fwrite(&ENDFLAG,2,1,file);	//结束标志位
+	fwrite(&ENDFLAG,sizeof(short),1,file);	//结束标志位
 	for(short blockNum=20480;blockNum>=20432;blockNum--)
-		fwrite(&blockNum,2,1,file);
+		fwrite(&blockNum,sizeof(short),1,file);
 	fclose(file);
 	/*至此成组链接初始化工作完成*/
 }
 
 /* 系统格式化的时候,需要初始化根目录,'Linux/Unix一切皆文件',因而根目录也是作为一个文件来处理 */
 /* 对于根目录,它作为一个文件也需要一个索引结点,本函数为根目录分配索引结点 */
+/* 本函数没有将分配的iNode写入磁盘,只是写在了内存的iNode栈中 */
 void initialRootDIR(){
 	systemiNode[0]->fileType=DIRECTORY;
 	for(short i=0;i<10;i++)
@@ -75,15 +79,15 @@ void initialRootDIR(){
 	systemiNode[0]->iaddr[10]=-1; //结束标志
 	systemiNode[0]->fileLength=10240;
 	systemiNode[0]->linkCount=0; /* 这里有疑问 暂时保留这个问题 */
-	FILE *file=fopen(diskName,"r+");
+	/*FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(&systemiNode[0],sizeof(INODE),1,file);
-	fclose(file);
-	//currentiNodeNum=1;
+	fclose(file);*/
+	currentFreeiNodeNum=639; //初始化根目录以后,系统的可用iNode数量为639
 }
 
 /* 格式化磁盘,这是一个'危险'的动作,执行此函数将抹掉系统所有数据,并将系统还原到初始状态 */
@@ -101,19 +105,20 @@ void format(){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
+	/* 将空闲根目录写入磁盘的21#-30#盘块 */
 	for(short i=0;i<640;i++)
 		rootDIR[i].inodeNum=-1;
 	fseek(file,1024*21,SEEK_SET);
 	fwrite(rootDIR,sizeof(dirItem),640,file);
 	for(short i=0;i<640;i++)
 		systemiNode[i].fileLength=-1;
+
 	initialRootDIR(); //为根目录分配iNode
+
+	/* 将初始化完毕的iNode栈写入系统iNode区(1#-20#盘块) */
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(systemiNode,sizeof(INODE),640,file);
 	fclose();
-
-	/* 将数据加载到内存 */
-	//load();
 }
 
 

@@ -7,14 +7,21 @@
 #include "data_structure.h"
 
 /* 文件系统'启动'时,将系统的必要信息(如空闲盘块、空闲盘块号栈等)加载到内存 */
+/* 每次'开机'时调用本函数 */
 void load(){
 	FILE *file=fopen(diskName,"r");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
- 	fread(&currentFreeBlockNum,2,1,file);  //读取系统空闲盘块数
- 	fread(superStack,2,BLOCKNUM+1,file);  //加载系统空闲盘块号栈
+ 	fread(superStack,sizeof(short),BLOCKNUM+1,file);  //加载系统空闲盘块号栈
+ 	fread(&totalBlockNum,sizeof(short),1,file); //读取系统文件区物理盘块总数
+ 	fread(&currentFreeBlockNum,sizeof(short),1,file);  //读取系统空闲盘块数
+ 	fread(&currentFreeiNodeNum,sizeof(short),1,file); //读取系统当前可用的iNode数目
+ 	fread(&systemFileNum,sizeof(short),1,file); //读取系统文件总数
+ 	stackLock=0; //初始化stack排他锁
+ 	currentDIR=rootDIR; //初始化当前路径指针
+ 	currentDirName="/"; //初始化当前路径名
  	fclose(file);
 }
 
@@ -311,7 +318,10 @@ int creatFile(char _fileName[],int _fileLength){
 	/* 写入iNode编号 */ 
 	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
 
-	//文件创建工作完成
+	/* 系统文件总数加一 */
+	systemFileNum++;
+
+	/* 文件创建工作完成 */
 	return 1;
 }
 
