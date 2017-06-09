@@ -468,8 +468,14 @@ void deleteFile(char _fileName[]){
 
 				/* 直接地址块的回收 */
 				for(j=0;j<10;j++,count--){
-					if(count==0)
+					if(count==0){
+						/* 回收iNode */
+						systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+						currentFreeiNodeNum++;
+						/* 清除目录项 */
+						currentDIR[i].inodeNum=-1;
 						return 0;
+					}
 					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
 				}
 
@@ -486,6 +492,11 @@ void deleteFile(char _fileName[]){
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++,count--){
 						if(count==0){
+							/* 回收iNode */
+							systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+							currentFreeiNodeNum++;
+							/* 清除目录项 */
+							currentDIR[i].inodeNum=-1;
 							fclose(file);
 							return 0;
 						}
@@ -494,8 +505,8 @@ void deleteFile(char _fileName[]){
 				}
 
 				/* 二次间址块的回收 */
-				short innerTempStack[512]; //内层临时栈
 				if(count>0){
+					short innerTempStack[512]; //内层临时栈
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++){
@@ -506,15 +517,56 @@ void deleteFile(char _fileName[]){
 						fseek(file,1024*tempStack[j],SEEK_SET);
 						fread(innerTempStack,sizeof(short),512,SEEK_SET);
 						for(short k=0;k<512;k++,count--){
-
+							if(count==0){
+								/* 回收iNode */
+								systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+								currentFreeiNodeNum++;
+								/* 清除目录项 */
+								currentDIR[i].inodeNum=-1;
+								fclose(file);
+								return 0;
+							}
+							allocateAnEmptyBlock(innerTempStack[k]);
 						}
 					}
 				}
 
+				/* 三次间址块 */
 
+				/* PASS */
 			}
 		}
 	}
+
+	/* 未找到目标删除项 */
+	return 404;
+}
+
+/* 打印当前目录下的信息 */
+void printInfo(){
+	short tempLength,flag=0;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
+		tempLength=640;
+	else
+		tempLength=256;
+	char _fileType[10];
+	for(short i=0;i<tempLength;i++){
+		/*  文件名   文件长度 文件类型 */
+		if(systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
+			/* flag用来标识当前目录是否为空目录,flag==0表示目录为空 */
+			flag=1; 
+			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL){
+				strcpy(_fileType,"NORMAL");
+				printf("%s\t%dKB\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
+			}
+			else{
+				strcpy(_fileType,"DIRECTORY");
+				printf("%s/\t\t%s\n",currentDIR[i].fileName,_fileType);
+			}
+		}
+	}
+	if(!flag)
+		printf("The current directory is empty!\n");
 }
 
 #endif
