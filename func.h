@@ -132,6 +132,7 @@ void shutDown(){
 }
 
 /* 打开当前路径下的指定子目录 */
+/* 本函数完成的工作: 将系统当前目录切换到子目录并在内存中加载子目录表 */
 /* 输入参数: 子目录名称 */
 /* 返回: 操作状态码 0:操作成功 404:目标项未找到 */
 int openDir(char _dirName[]){
@@ -187,8 +188,26 @@ int openDir(char _dirName[]){
 int returnPreDir(){
 	if(!strcmp(currentDirName,"/"))
 		return 403;
+	
 	/* 如果上一级目录是根目录,则不需要进行I/O操作即可进行目录切换 */
-	if(openedDirStack[openedDirStackPointer-1]->iaddr[0]==21){
+	if(openedDirStackPointer==1){
+		/* 进行目录切换的时候要将系统当前目录表写回磁盘 */
+
+		/* 将系统当前目录表写回磁盘 */
+		FILE *file=fopen(diskName,"r+");
+		if(!file){
+			printf("Error! Can't open the $DISK\n");
+			exit(0);
+		}
+		short i,j,count=0;
+		for(i=0;i<4;i++){
+			fseek(file,1024*currentDiriNode->iaddr[i],SEEK_SET);
+			for(j=0;j<64;j++)
+				fwrite(&currentDIR[count++],sizeof(dirItem),1,file);
+		}
+		fclose(file);
+		/* 写回操作完成 */
+
 		openedDirStackPointer--; //更改openedDirStack栈的栈顶指针
 		strcpy(currentDirName,"/"); //切换当前目录名称
 		currentDIR=rootDIR; //切换当前目录指针
