@@ -147,7 +147,7 @@ int openDir(char _dirName[]){
 
 /* 返回上一级目录 */
 /* 输入参数:NULL */
-/* 返回参数:操作状态码 0:操作成功 403:当前目录已是根目录操作被拒绝 */
+/* 返回参数:操作状态码 0:操作成功 403:当前目录已是根目录,操作被拒绝 */
 int returnPreDir(){
 	if(!strcmp(currentDirName,"/"))
 		return 403;
@@ -177,7 +177,14 @@ int returnPreDir(){
 		currentDIR=tempDir; //切换当前目录指针
 		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
 		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
-		
+		char tempString[80];
+		for(char *p=&currentDirName[0],int Number=0;*p!='\0'&&Number<=openedDirStackPointer;p++){
+			strcat(tempString,*p);
+			if(*p=='/')
+				Number++;
+		}
+		strcpy(currentDirName,tempString); //切换当前目录名称
+		return 0;			
 	}
 
 }
