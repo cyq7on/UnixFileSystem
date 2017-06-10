@@ -247,10 +247,10 @@ int returnPreDir(){
 
 		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
 		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
-		char tempString[80]="\0";
-		int Number=0
+		char tempString[80];
+		int Number=0,pointer=0;
 		for(char *p=&currentDirName[0];*p!='\0'&&Number<=openedDirStackPointer;p++){
-			strcat(tempString,*p);
+			tempString[pointer++]=*p;
 			if(*p=='/')
 				Number++;
 		}
