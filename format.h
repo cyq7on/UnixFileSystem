@@ -106,17 +106,23 @@ void format(){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
-	/* 将空闲根目录写入磁盘的21#-30#盘块 */
-	for(short i=0;i<640;i++)
-		rootDIR[i].inodeNum=-1;
-	fseek(file,1024*21,SEEK_SET);
-	fwrite(rootDIR,sizeof(dirItem),640,file);
+	/* 初始化系统iNode */
 	for(short i=0;i<640;i++)
 		systemiNode[i].fileLength=-1;
 
 	initialRootDIR(); //为根目录分配iNode
 
-	/* 将初始化完毕的iNode栈写入系统iNode区(1#-20#盘块) */
+	/* 将初始化的根目录写入磁盘的21#-30#盘块 */
+	/* 根目录的第一项(rootDIR[0])作为其自身的目录项 */
+	strcpy(rootDIR[0].fileName,"/");
+	rootDIR[0].inodeNum=0;
+
+	for(short i=1;i<640;i++)
+		rootDIR[i].inodeNum=-1;
+	fseek(file,1024*21,SEEK_SET);
+	fwrite(rootDIR,sizeof(dirItem),640,file);
+
+	/* 将初始化完毕的iNode写入系统iNode区(1#-20#盘块) */
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(systemiNode,sizeof(INODE),640,file);
 	fclose();

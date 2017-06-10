@@ -25,12 +25,14 @@ void load(){
  	fseek(file,1024*21,SEEK_SET);
  	fread(rootDIR,sizeof(dirItem),640,file); //加载系统根目录
  	currentDIR=rootDIR; //初始化当前路径指针
- 	currentDirName="/"; //初始化当前路径名
+ 	strcpy(currentDirName,"/");  //初始化当前路径名
  	currentDiriNode=&systemiNode[0]; //初始化当前目录的iNode指针
+ 	openedDirStack[0]=&systemiNode[0]; //初始化openedDirStack栈,让其指向根目录的iNode
+ 	openedDirStackPointer=0; //初始化openedDirStack栈栈顶指针
  	fclose(file);
 }
 
-/* 本函数将iNode栈写回磁盘 */
+/* 本函数将iNode段写回磁盘 */
 /* iNode栈是在内存中维护的一个系统栈,每次有新的改动后最好将其立即写回磁盘,这样可以在一定程度上避免'非法关机'
    造成的错误
 */
@@ -45,8 +47,8 @@ void writeiNode(){
 	fclose(file);
 }
 
-/* 将当前目录栈写回磁盘 */
-/* 根目录栈的写回是比较简单的,因为根目录占用的盘块是确定的(21#-30#)
+/* 将当前系统目录段写回磁盘 */
+/* 根目录段的写回是比较简单的,因为根目录占用的盘块是确定的(21#-30#)
    如果是子目录则需要先获取子目录分配到的盘块,再将数据写入
 */
 void writeCurrentDir(){
@@ -103,10 +105,10 @@ void shutDown(){
 	fclose(file);
 }
 
-/* 打开当前路径下的指定目录 */
+/* 打开当前路径下的指定子目录 */
 /* 输入参数: 目录名称 */
 /* 返回: 操作状态码 0:操作成功 404:目标项未找到 */
-int openDir(char _dirName){
+int openDir(char _dirName[]){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
@@ -130,6 +132,8 @@ int openDir(char _dirName){
 				}
 				fclose(file);
 				/* 已将盘块中的目录数据加载至系统内存的临时目录区 */
+				/* 将当前目录push进栈中 */
+				openedDirStack[++openedDirStackPointer]=&systemiNode[currentDIR[i].inodeNum];
 				strcat(currentDirName,"/");
 				strcat(currentDirName,_dirName); //切换系统当前目录名称
 				currentDIR=tempDir; //切换当前目录指针
@@ -141,6 +145,25 @@ int openDir(char _dirName){
 	return 404;
 }
 
+/* 返回上一级目录 */
+/* 输入参数:NULL */
+/* 返回参数:操作状态码 0:操作成功 403:当前目录已是根目录操作被拒绝 */
+int returnPreDir(){
+	if(!strcmp(currentDirName,"/"))
+		return 403;
+	/* 如果上一级目录是根目录,则不需要进行I/O操作即可进行目录切换 */
+	if(openedDirStack[openedDirStackPointer-1]->iaddr[0]==21){
+		openedDirStackPointer--; //更改openedDirStack栈的栈顶指针
+		strcpy(currentDirName,"/"); //切换当前目录名称
+		currentDIR=rootDIR; //切换当前目录指针
+		currentDiriNode=&systemiNode[0]; //切换当前目录的iNode指针
+		return 0;
+	}
+	else{
+
+	}
+
+}
 
 /*
 	成组链接法中,当一组盘块已经分配完,则需要将下一组盘块的第一个盘块中记录的信息调入空闲盘块号栈,因为这个

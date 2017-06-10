@@ -57,15 +57,16 @@ short currentFreeBlockNum; //系统当前的文件区空闲盘块数
 short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
 short stackLock; //空闲盘块号栈是临界资源,这个变量作为空闲盘块号栈的锁,值为1表示已上锁
 short systemFileNum; //记录系统文件总数,打印系统信息时将用到这个变量
-INODE systemiNode[640]; //系统iNode栈,1#-20#盘块是iNode区,本文件系统至多支持640个文件
+INODE systemiNode[640]; //系统iNode栈,1#-20#盘块是iNode区,本文件系统至多支持640个文件(包含根目录)
 short currentFreeiNodeNum; //当前可供分配的iNode数量
 dirItem rootDIR[640]; //系统根目录栈,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包块子目录)
 dirItem tempDIR[256]; //系统临时目录栈
-dirItem *currentDIR=rootDIR; //当前的目录指针
-char currentDirName[50]; //当前的目录名称
+dirItem *currentDIR; //当前的目录指针
+char currentDirName[100]; //当前的目录名称
 INODE *currentDiriNode; //指向当前目录的iNode结点,设置这个指针是为了实现将iNode栈的内容写回磁盘
-dirItem *openLinkedListPointer; /* 系统的'打开路径链'的当前结点指针,这是在内存中维护的一个从当前目录至根目
-								   录的逆向链表,通过这个链表来实现父目录的返回(允许级联返回) */
+INODE *openedDirStack[639]; /* 在内存中维护的一个目录的iNode栈,每打开一个子目录便将当前目录的iNode指针push进
+							   这个栈中当要返回父目录时,再将栈顶pop出来,栈顶指针为openedDirStack[0] */
+int openedDirStackPointer; //openedDirStack栈的栈顶指针
 								
 						    	   
 
