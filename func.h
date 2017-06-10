@@ -103,8 +103,10 @@ void shutDown(){
 	fclose(file);
 }
 
-/* 打开目录函数 */
-void openDir(char _dirName){
+/* 打开当前路径下的指定目录 */
+/* 输入参数: 目录名称 */
+/* 返回: 操作状态码 0:操作成功 404:目标项未找到 */
+int openDir(char _dirName){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
@@ -115,15 +117,28 @@ void openDir(char _dirName){
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
 				/* 已找到目标目录项 */
 				/* 下一步工作是将该目录的所有项提取到tempDir中 */
-				short count=0;
+				short j,k,count=0;
 				FILE *file=fopen(diskName,"r");
-				for(short j=0;j<4;j++){
-
+				if(!file){
+					printf("Error! Can't open the $DISK\n");
+					exit(0);
 				}
-
+				for(j=0;j<4;j++){
+					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[j],SEEK_SET);
+					for(k=0;k<64;k++)
+						fread(&tempDir[count++],sizeof(dirItem),1,file);
+				}
+				fclose(file);
+				/* 已将盘块中的目录数据加载至系统内存的临时目录区 */
+				strcat(currentDirName,"/");
+				strcat(currentDirName,_dirName); //切换系统当前目录名称
+				currentDIR=tempDir; //切换当前目录指针
+				return 0;
 			}
 		}
 	}
+	/* 目标项未找到 */
+	return 404;
 }
 
 
