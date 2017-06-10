@@ -14,28 +14,51 @@ void load(){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
+
+	/* StepI: 读取引导区数据 */
  	fread(superStack,sizeof(short),BLOCKNUM+1,file);  //加载系统空闲盘块号栈
  	fread(&totalBlockNum,sizeof(short),1,file); //读取系统文件区物理盘块总数
  	fread(&currentFreeBlockNum,sizeof(short),1,file);  //读取系统当前空闲盘块数
  	fread(&currentFreeiNodeNum,sizeof(short),1,file); //读取系统当前可用的iNode数目
  	fread(&systemFileNum,sizeof(short),1,file); //读取系统文件总数
- 	stackLock=0; //初始化stack排他锁
+
+ 	/* StepII: 读取系统iNode表 */
  	fseek(file,1024*1,SEEK_SET);
- 	fread(systemiNode,sizeof(INODE),640,file); //加载系统iNode栈
+ 	fread(systemiNode,sizeof(INODE),640,file); 
+
+ 	/* StepIII: 读取系统根目录表 */
  	fseek(file,1024*21,SEEK_SET);
- 	fread(rootDIR,sizeof(dirItem),640,file); //加载系统根目录
- 	currentDIR=rootDIR; //初始化当前路径指针
- 	strcpy(currentDirName,"/");  //初始化当前路径名
- 	currentDiriNode=&systemiNode[0]; //初始化当前目录的iNode指针
- 	openedDirStack[0]=&systemiNode[0]; //初始化openedDirStack栈,让其指向根目录的iNode
- 	openedDirStackPointer=0; //初始化openedDirStack栈栈顶指针
+ 	fread(rootDIR,sizeof(dirItem),640,file);
  	fclose(file);
+
+ 	/* StepIV: 初始化系统当前目录指针 */ 
+ 	currentDIR=rootDIR; 
+
+ 	/* StepV: 初始化系统当前路径名 */
+ 	strcpy(currentDirName,"/");
+
+ 	/* StepVI: 初始化系统当前目录的iNode指针 */
+ 	currentDiriNode=&systemiNode[0];
+
+ 	/* 系统在内存中维护了一个路径栈,该栈的起始元素即为指向根目录的iNode的指针,每当打开一级子目录便将该
+ 	   子目录的iNode指针push进栈中,返回上一级目录时再pop出来以便实现目录的返回 	*/
+
+ 	/* StepVII: 初始化系统当前路径栈,将系统目录的iNode指针压入栈中 */
+ 	openedDirStack[0]=&systemiNode[0];
+
+ 	/* StepVIII: 初始化系统当前路径栈的栈顶指针 */
+ 	openedDirStackPointer=0;
+
+ 	/* 空闲盘块号栈是临界资源,对它的访问必须互斥进行,因而系统设置了一个状态位作为空闲盘块号栈的排他锁 */
+ 	/* StepIX: 将空闲盘块号栈的状态位置0,表示当前无进程正在占用它 */
+ 	stackLock=0;
+
+ 	/* 至此文件系统所有数据加载完毕,系统完成'开机'过程 */
 }
 
-/* 本函数将iNode段写回磁盘 */
-/* iNode栈是在内存中维护的一个系统栈,每次有新的改动后最好将其立即写回磁盘,这样可以在一定程度上避免'非法关机'
-   造成的错误
-*/
+
+/* 本函数将系统iNode表写回磁盘 */
+/* iNode表是在内存中维护的一个系统表,每次有新的改动后最好将其立即写回磁盘 */
 void writeiNode(){
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
@@ -47,9 +70,9 @@ void writeiNode(){
 	fclose(file);
 }
 
-/* 将当前系统目录段写回磁盘 */
-/* 根目录段的写回是比较简单的,因为根目录占用的盘块是确定的(21#-30#)
-   如果是子目录则需要先获取子目录分配到的盘块,再将数据写入
+/* 将系统当前目录的目录表写回磁盘 */
+/* 对于系统根目录表的写回是比较简单的,因为根目录占用的物理盘块号是固定的(21#-30#)
+   如果是子目录则需要先获取子目录分配到的盘块的盘块号,再将数据写回
 */
 void writeCurrentDir(){
 	FILE *file=fopen(diskName,"r+");
@@ -57,6 +80,7 @@ void writeCurrentDir(){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
+
 	/* 如果当前目录是系统根目录 */
 	if(!strcmp(currentDirName,"/")){
 		fseek(file,1024*21,SEEK_SET);
@@ -64,9 +88,11 @@ void writeCurrentDir(){
 		fclose(file);
 		return;
 	}
-	/* 如果当前不是在系统根目录下 */
+
+	/* 如果当前目录不是系统根目录 */
 	else{
 		short i,j,count=0; //设置一个计数变量
+		/* 子目录占用的物理盘块数均为4 */
 		for(i=0;i<4;i++){
 			fseek(file,1024*(currentDiriNode->iaddr[i]),SEEK_SET);
 			for(j=0;j<64;j++)
@@ -82,10 +108,10 @@ void writeCurrentDir(){
 /* 本函数与'开机'函数(load()函数)相对应,也是本系统一个重要的函数 */
 /* 每次关闭文件系统前,要调用本函数,本函数将系统变量及系统栈写回'磁盘'系统区 */
 void shutDown(){
-	/* 将当前iNode栈写回磁盘 */
+	/* 将当前iNode表写回磁盘 */
 	writeiNode();
 
-	/* 将当前目录栈写回磁盘 */
+	/* 将当前目录栈表写回磁盘 */
 	writeCurrentDir();
 
 	/* 将空闲盘块号栈写回磁盘 */
@@ -101,12 +127,12 @@ void shutDown(){
 	fwrite(&totalBlockNum,sizeof(short),1,file);  //写入系统文件区空闲盘块总数(20449)
 	fwrite(&currentFreeBlockNum,sizeof(short),1,file); //写入当前可用的文件区空闲盘块数
 	fwrite(&currentFreeiNodeNum,sizeof(short),1,file); //写入当前可用的iNode数
-	fwrite(&systemFileNum,sizeof(short),1,file); //写入当前系统的文件总数
+	fwrite(&systemFileNum,sizeof(short),1,file); //写入系统当前的文件总数
 	fclose(file);
 }
 
 /* 打开当前路径下的指定子目录 */
-/* 输入参数: 目录名称 */
+/* 输入参数: 子目录名称 */
 /* 返回: 操作状态码 0:操作成功 404:目标项未找到 */
 int openDir(char _dirName[]){
 	short tempLength;
@@ -115,10 +141,11 @@ int openDir(char _dirName[]){
 	else
 		tempLength=256;
 	for(short i=0;i<tempLength;i++){
+		/* 扫描到目录项需要同时满足两个条件 I:fileName是相同的 II:fileType必须为DICTORY */
 		if(!strcmp(currentDIR[i].fileName,_dirName)){
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
 				/* 已找到目标目录项 */
-				/* 下一步工作是将该目录的所有项提取到tempDir中 */
+				/* 下一步工作是将该目录表的所有目录项提取到系统临时目录表(tempDir)中 */
 				short j,k,count=0;
 				FILE *file=fopen(diskName,"r");
 				if(!file){
@@ -131,12 +158,21 @@ int openDir(char _dirName[]){
 						fread(&tempDir[count++],sizeof(dirItem),1,file);
 				}
 				fclose(file);
-				/* 已将盘块中的目录数据加载至系统内存的临时目录区 */
-				/* 将当前目录push进栈中 */
+				/* 已将盘块中的目录数据加载至系统内存的临时目录表中 */
+				/* 将当前目录的iNode指针push进路径栈中 */
 				openedDirStack[++openedDirStackPointer]=&systemiNode[currentDIR[i].inodeNum];
-				strcat(currentDirName,"/");
-				strcat(currentDirName,_dirName); //切换系统当前目录名称
-				currentDIR=tempDir; //切换当前目录指针
+
+				/* 切换系统当前目录名称 */
+				/* 如果是一级子目录,则系统当前路径名不需要再追加'/'符号,直接追加子目录名称即可 */
+				if(openedDirStackPointer==1)
+					strcat(currentDirName,_dirName);
+				else{
+					strcat(currentDirName,"/");
+					strcat(currentDirName,_dirName); 
+				}
+				
+				/* 切换系统当前目录指针 */
+				currentDIR=tempDir; 
 				return 0;
 			}
 		}
@@ -147,7 +183,7 @@ int openDir(char _dirName[]){
 
 /* 返回上一级目录 */
 /* 输入参数:NULL */
-/* 返回参数:操作状态码 0:操作成功 403:当前目录已是根目录,操作被拒绝 */
+/* 返回参数:操作状态码 0:操作成功 403:当前目录已是系统根目录,操作被拒绝 */
 int returnPreDir(){
 	if(!strcmp(currentDirName,"/"))
 		return 403;
