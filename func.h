@@ -298,12 +298,12 @@ short convertFileLength(short _fileLength){
 
 /* 盘块分配函数 */
 /* 输入参数: NULL */
-/* 返回: 分配成功则返回分配的盘块号,失败返回-1 */
+/* 返回: 分配成功则返回分配的盘块号,空间不足则返回-1 */
 short allocateAnEmptyBlock(){
 	short result;
 	/* 正常情况.空闲盘块号栈中的空闲的盘块数大于1 */
 	if(superStack[0]>1){ 
-		result=superStack[superStack[0]]; //
+		result=superStack[superStack[0]]; 
 		superStack[0]--; //栈顶指针下移一位
 		currentFreeBlockNum--;
 		return result;
@@ -311,9 +311,10 @@ short allocateAnEmptyBlock(){
 	else{
 		/* 标志位为0,说明文件区盘块已经用尽,无法分配 */
 		if(superStack[1]==0){
-			printf("Sorry,There is no spare disk block available for distribution!\n");
+			//printf("Sorry,There is no spare disk block available for distribution!\n");
 			return -1;
 		}
+
 		/* 当前组盘块已经只剩下最后一个了,需要先将下一组的第一个盘块的信息写入盘块号栈,再分配 */
 		result=superStack[1]; /* 将盘块号赋值给result,注意这个操作与下一个操作的区别,这个是取出盘块号
 		                         下一个操作是取出盘块号对应的内容 */
@@ -323,12 +324,15 @@ short allocateAnEmptyBlock(){
 	}
 }
 
-/* 回收一个盘块 */
+/* 盘块回收函数 */
+/* 输入参数: 盘块号(short型) */
+/* 返回: NULL */
 void recycleAnBlock(short _diskNum){
 	if(superStack[0]<=49){
 		superStack[0]++;
 		superStack[superStack[0]]=_diskNum;
 	}
+
 	/* 如果空闲盘块号栈满,则需要先将空闲盘块号栈的数据写入到新回收的这个盘块中 */
 	else{
 		FILE *file=fopen(diskName,"r+");
@@ -346,20 +350,20 @@ void recycleAnBlock(short _diskNum){
 }
 
 
-/* 在Unix中,iNode是顺序排列的,所以不需要有单独的一个字段来记录iNode号 */
+/* 在Unix中,iNode是顺序排列的,所以不需要有额外的字段来记录iNode号 */
 /* 创建一个iNode结点,并分配所需盘块 */
 /* 状态码:
-   403: iNode或系统空闲盘块已耗尽,无法创建新的iNode
+   403: iNode或系统空闲盘块已耗尽,无法创建新的iNode,操作被拒绝
    0: 操作成功
 */
-int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
+int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 
 	/* 如果系统iNode已经用完,则iNode创建操作失败 */
 	if(currentFreeiNodeNum==0)
 		return 403;
 
-	short i=0; //定义一个循环变量
-	_inode->fileType=fileType;
+	short i,j,k; //定义循环变量
+	_inode->fileType=_fileType;
 
 
 
@@ -368,7 +372,7 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 		_inode->iaddr[i]=-1;
 	/* 如果该文件是目录文件,那么分配4个盘块 */
 	/* 创建目录文件不仅仅是分配盘块,还要初始化目录项 */
-	if(fileType==DIRECTORY){
+	if(_fileType==DIRECTORY){
 
 		/* 如果系统可用空闲盘块数不足4个,则无法创建目录,本次操作失败 */
 		if(currentFreeBlockNum<4)
@@ -380,21 +384,25 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
 		}
+
+		/* 向系统申请四个空闲盘块 */
 		for(i=0;i<4;i++){
 			_inode->iaddr[i]=allocateAnEmptyBlock();
 			/* 分配完四个盘块以后,将这四个盘块写满空目录项 */
-			for(short k=0;k<64;k++){
+			for(k=0;k<64;k++){
 				tempOneBlockDir[k].inodeNum=-1;
 			}
+			/* 将目录项写入磁盘 */
 			fseek(file,1024*_inode->iaddr[i],SEEK_SET);
 			fwrite(tempOneBlockDir,sizeof(dirItem),64,file);
 		}
 		fclose(file);
 	}
 
-	/* Unix采用混合索引方式,因而对于文件的分配是一个相对复杂的过程 */
+	/* 非目录文件盘块的分配 */
+	/* Unix采用混合索引方式,因而对于盘块的分配是一个相对复杂的过程 */
 	else{
-		short count=convertFileLength(fileLength); //计算需要分配给文件的盘块数
+		short count=convertFileLength(_fileLength); //计算需要分配给文件的盘块数
 
 		/* 先计算此次分配所需使用的盘块数,注意Unix采用混合索引分配方式,因而计算所需盘块数时要考虑索引块*/
 		int needIndexBlockNum; 
@@ -402,16 +410,19 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 		/* 直接分配 */
 		if(count<=10)
 			needIndexBlockNum=0;
+
 		/* 一次间址分配 */
 		else if(count>10&&count<=512+10)
 			needIndexBlockNum=1;
+
 		/* 二次间址分配 */
 		else if(count>512+10&&count<=512*512+512+10)
 			needIndexBlockNum=512+1+1;
+
 		//......
 		//本系统最多到二次间址分配方式
 
-		/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目,则此次分配失败 */
+		/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目(文件自身所需盘块数和索引块数之和),则此次分配失败 */
 		if(currentFreeBlockNum<needIndexBlockNum+count)
 			return 403;
 
@@ -422,6 +433,7 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 		/* 一级索引分配方式 */
 		if(count>0){ 
 			_inode->iaddr[10]=allocateAnEmptyBlock(); //分配一次间址块
+
 			/* 在本系统中,一个盘块的大小为1KB,每个盘块号占2Byte,所以一个索引块最多可以存放512个盘块号 */
 			short singleIndirect[512];
 			for(i=0;i<512;i++)
@@ -435,13 +447,15 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 			if(count>0){
 				_inode->iaddr[11]=allocateAnEmptyBlock(); //记录索引块块号的索引块
 				short doubleIndirect[512];
-				for(i=0;i<512;i++)
+				for(i=0;i<512;i++){
 					doubleIndirect[i]=-1;
+					singleIndirect[i]=-1;
+				}
 				for(i=0;i<512&&count>0;i++){
 
 					singleIndirect[i]=allocateAnEmptyBlock(); /* 最内层记录文件实际盘块号的各个索引块 */
 
-					for(short j=0;j<512&&count>0;j++,count--){
+					for(j=0;j<512&&count>0;j++,count--){
 							doubleIndirect[j]=allocateAnEmptyBlock(); //文件实际占用的盘块
 					}
 					/*程序执行到这里,亦即是跳出了上面这个for循环,对应于两种情况
@@ -461,15 +475,15 @@ int creatiNode(INODE *_inode,byte fileType,int fileLength,byte linkCount){
 	}
 	/*------------------------分配盘块END------------------------------*/
 
-	_inode->fileLength=fileLength;
-	_inode->linkCount=linkCount;
+	_inode->fileLength=_fileLength;
+	_inode->linkCount=_linkCount;
 
 	/* 本次操作成功 */
 	return 0;
 }
 
 
-/* 创建文件,需要给出文件名和文件长度 */
+/* 在当前目录下创建新文件,需要给出文件名和文件长度 */
 /* 创建目录文件的函数待会单独写,这个函数的参数列表不给出文件类型,默认就是NORMAL类文件 */
 /* 
    本函数的返回值将作为本次操作的状态码传递给调用者供其参考
@@ -492,25 +506,27 @@ int creatFile(char _fileName[],int _fileLength){
 		if(!strcmp(currentDIR[i].fileName,_fileName)){  //发现同名项
 			/* 如果这个同名项是目录,那么允许同名 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY) 
-				continue; //这里不能直接break,因为必须要扫描完整个目录
+				continue; //这里不能直接break,必须要遍历完整个目录(因为有可能当前目录下有同名的目录和文件)
 			/* 出现同名文件了 */
 			else
 				return 500; 
 		} 
 
 	}
+
 	/* 先根据文件的字节长度计算该文件所需要占用的盘块数目 */
 	short fileLength=convertFileLength(_fileLength);
+
 	/* 文件长度如果超过剩余盘块数或者系统当前iNode已经用尽则无法再分配 */
 	/* 
 	   这里要注意,对于系统是否有足够盘块供文件使用,不能简单地比对系统剩余盘块数和文件所需盘块数
 	   因为对于Unix来说采用增量式索引组织方式,因而计算时应考虑到索引块的存在.
 	*/
-	 /*一个文件需要使用的索引块数(indexBlockNum)和其自身所需盘块数(fileBlockNum)有如下的简单关系:
+	 /*一个文件需要使用的索引块数(indexBlockNum)和其自身所需盘块数(fileBlockNum)有如下的关系:
 
-	   if fileBlockNum<=10 then indexBlockNum==0
-	   else if fileBlockNum>10&&fileBlockNum<=512+10 then indexBlockNum==1
-	   else if fileBlockNum>512+10&&fileBlockNum<512*512+512+10 the indexBlockNum==512+1+1
+	   if fileBlockNum<=10 then indexBlockNum==0 (直接寻址)
+	   else if fileBlockNum>10&&fileBlockNum<=512+10 then indexBlockNum==1 (一次间接寻址)
+	   else if fileBlockNum>512+10&&fileBlockNum<512*512+512+10 the indexBlockNum==512+1+1 (二次间接寻址)
 	   ......
 	 */
 	int needIndexBlockNum; 
@@ -518,17 +534,20 @@ int creatFile(char _fileName[],int _fileLength){
 	/* 直接分配 */
 	if(fileLength<=10)
 		needIndexBlockNum=0;
+
 	/* 一次间址分配 */
 	else if(fileLength>10&&fileLength<=512+10)
 		needIndexBlockNum=1;
+
 	/* 二次间址分配 */
 	else if(fileLength>512+10&&fileLength<=512*512+512+10)
 		needIndexBlockNum=512+1+1;
+
 	//......
 	//本系统最多到二次间址分配方式
 
-	/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目,则此次分配失败 */
-	if(currentFreeBlockNum<needIndexBlockNum+count)
+	/* 如果系统可用空闲盘块数小于此次分配所需的盘块数目(文件自身所需的盘块数和索引块数之和),则此次分配失败 */
+	if(currentFreeBlockNum<needIndexBlockNum+fileLength)
 		return 403;
 
 	/* 创建一个文件需要先申请iNode而后填写目录项,两个操作的顺序不能颠倒 */
@@ -544,13 +563,15 @@ int creatFile(char _fileName[],int _fileLength){
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
 	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
 	for(short i=0;i<tempLength;i++,tempDirNum++){
 		if(currentDIR[i].inodeNum==-1)
 			break;
 	}
+
+	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
 	strcpy(currentDIR[tempDirNum].fileName,_fileName);
+
 	/* 写入iNode编号 */ 
 	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
 
@@ -561,8 +582,14 @@ int creatFile(char _fileName[],int _fileLength){
 	return 1;
 }
 
-/* 创建一个子目录 */
+
+/* 在当前目录下创建一个子目录 */
 /* 'Linux/Unix一切皆文件',所以对于目录的创建和普通文件有些类似 同样也会因为空间或者iNode耗尽而无法创建 */
+/* 操作状态码: 
+   403: 当前目录下有同名目录,操作被拒绝 
+   500: 系统空闲盘块或iNode不足,操作被拒绝
+   0: 操作成功
+*/
 int creatDir(char _dirName[]){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
@@ -572,17 +599,21 @@ int creatDir(char _dirName[]){
 
 	/* 检测当前路径下是否有同名的目录项 */
 	for(short i=0;i<tempLength;i++){
-		/* 对于目录来说,在同一级目录下出现同名,可以直接拒绝执行 */
-		if(!strcmp(currentDIR[i].fileName,_dirName))
-			return -1;
+		/* 如果同名的目录项是非目录文件,那么允许同名,否则拒绝执行目录创建操作 */
+		if(!strcmp(currentDIR[i].fileName,_dirName)){
+			if(!systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY)
+				continue;
+			else
+				return 403;
+		}
 	}
 
 	/* 在本系统中,每个子目录分配4个盘块 */
 	if(currentFreeBlockNum<4||currentFreeiNodeNum==0)
 		//printf("Sorry,There is no spare disk block available for distribution!\n");
-		return 0;
+		return 500;
 
-	/* 重名问题以及空间问题已经检查完毕,下面开始正式创建 */
+	/* 重名以及空间问题已经检查完毕,下面开始正式创建 */
 
 	/* 申请iNode */
 	/* 如何获取一个空白iNode号是一个值得考虑的问题,暂时采用线性扫描法 */
@@ -595,13 +626,15 @@ int creatDir(char _dirName[]){
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
 	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
 	for(short i=0;i<tempLength;i++,tempDirNum++){
 		if(currentDIR[i].inodeNum==-1)
 			break;
 	}
+
+	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
 	strcpy(currentDIR[tempDirNum].fileName,_dirName);
+	
 	/* 写入iNode编号 */ 
 	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
 
