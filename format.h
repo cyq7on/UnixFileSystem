@@ -80,12 +80,12 @@ void groupLink(){
 /* 对于根目录,它作为一个文件也需要一个iNode,本函数为根目录分配iNode */
 /* 本函数没有将分配的iNode写入磁盘,只是写在了内存的iNode表中 */
 void initialRootDIR(){
-	systemiNode[0]->fileType=DIRECTORY;
+	systemiNode[0].fileType=DIRECTORY;
 	for(short i=0;i<10;i++)
-		systemiNode[0]->iaddr[i]=i+21; //根目录占用的盘块是21#-30#
-	systemiNode[0]->iaddr[10]=-1; //结束标志位
-	systemiNode[0]->fileLength=10240;
-	systemiNode[0]->linkCount=0; /* 这里有疑问 暂时保留这个问题 */
+		systemiNode[0].iaddr[i]=i+21; //根目录占用的盘块是21#-30#
+	systemiNode[0].iaddr[10]=-1; //结束标志位
+	systemiNode[0].fileLength=10240;
+	systemiNode[0].linkCount=0; /* 这里有疑问 暂时保留这个问题 */
 	/*FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
@@ -133,7 +133,7 @@ void format(){
 	fwrite(systemiNode,sizeof(INODE),640,file);
 
 	/* 关闭文件,格式化操作完成 */
-	fclose();
+	fclose(file);
 }
 
 

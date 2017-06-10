@@ -247,8 +247,9 @@ int returnPreDir(){
 
 		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
 		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
-		char tempString[80]='\0';
-		for(char *p=&currentDirName[0],int Number=0;*p!='\0'&&Number<=openedDirStackPointer;p++){
+		char tempString[80]="\0";
+		int Number=0
+		for(char *p=&currentDirName[0];*p!='\0'&&Number<=openedDirStackPointer;p++){
 			strcat(tempString,*p);
 			if(*p=='/')
 				Number++;
@@ -622,6 +623,7 @@ int creatDir(char _dirName[]){
 		if(systemiNode[i].fileLength==-1)
 			break;
 	}
+
 	creatiNode(&systemiNode[tempiNodeNum],DIRECTORY,1024*4,1);
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
@@ -634,11 +636,11 @@ int creatDir(char _dirName[]){
 
 	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
 	strcpy(currentDIR[tempDirNum].fileName,_dirName);
-	
+
 	/* 写入iNode编号 */ 
 	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
 
-	//目录创建工作完成
+	/* 目录创建工作完成 */
 	return 1;
 
 }
@@ -652,39 +654,41 @@ int creatDir(char _dirName[]){
    0: 目录删除成功
 */
 int deleteDir(char _dirName[]){
-	short tempLength;
+	short tempLength,i,j,k;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
 		tempLength=256;
-	for(short i=0;i<tempLength;i++){
+	for(i=0;i<tempLength;i++){
 		if(!strcmp(currentDIR[i].fileName,_dirName)){
-			/* 需要判断一下被删除的目标文件是目录文件还是非目录文件,因为同级路径下允许子目录和文件同名 */
+			/* 需要判断一下扫描到的这个文件是目录文件还是非目录文件,因为同级路径下允许子目录和文件同名 */
 
 			/* 检测一下是否为目录文件 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
 				/* 对于目录文件的删除,需要检测一下currentDIR[i]是否有下属文件或子目录,有的话拒绝执行删除操作 */
-				/* 将currentDIR[i]的目录项加载到系统临时目录栈 */
+				
+				/* 将currentDIR[i]的目录表拷贝到内存 */
 				FILE *file=fopen(diskName,"r+");
 				if(!file){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
 				}
 
-				/* 将四个盘块的目录项数据按照次序读入到系统临时目录栈中 */
+				/* 将子目录表拷贝到内存 */
 				short tempCount=0; //临时用计数器
-				for(short j=0;j<4;j++){
+				dirItem _tempDir[256];
+				for(j=0;j<4;j++){
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[j],SEEK_SET);
-					for(short k=0;k<64;k++){
-						fread(&tempDir[tempCount++],sizeof(dirItem),1,file);
+					for(k=0;k<64;k++){
+						fread(&_tempDir[tempCount++],sizeof(dirItem),1,file);
 					}
 				}
 				fclose(file);
 
-				/* 此时,current[i]的下属目录项已经全部加载至系统临时目录栈 */
-				/* 下一步工作即是遍历临时目录栈,检测栈中是否有非空项,如果有则拒绝执行删除操作 */
+				/* 此时,current[i]的下属目录的目录表已经加载至内存 */
+				/* 下一步工作即是遍历目录表,检测表中是否有非空项,如果有则拒绝执行删除操作 */
 				for(short j=0;j<256;j++){
-					if(tempDir[j].inodeNum!=-1)
+					if(_tempDir[j].inodeNum!=-1)
 						return 403;
 				}
 
@@ -716,13 +720,15 @@ int deleteDir(char _dirName[]){
 	return 404;
 }
 
-/* 删除文件 */
+
+/* 删除当前目录下的指定文件 */
+/* 输入参数: 目标文件的文件名 */
 /* 
-   状态码:
+   操作状态码:
    404: 指定文件未找到,删除操作失败
    0: 删除成功
 */
-void deleteFile(char _fileName[]){
+int deleteFile(char _fileName[]){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
@@ -733,17 +739,17 @@ void deleteFile(char _fileName[]){
 			/* 同级路径下允许目录名和文件名相同,因此还需要判断一下这个文件是目录文件还是非目录文件*/
 
 			/* 
-				对于目录的删除和普通文件的删除虽然类似但仍有一些较为特殊的差异,因而对于目录的删除我们
-				采用另外一个专门的函数来处理,本函数只负责非目录文件的删除操作
+				对于目录的删除和普通文件的删除虽然类似,但仍有一些较为特殊的差异,因而对于目录的删除我们
+				采用另外一个专门的函数来处理,本函数只负责'非目录文件'的删除操作
 			*/
 
 			/* 如果不是目录文件,那么开始进行删除操作 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType!=DIRECTORY){
-				/* Unix采用混合索引方式,因而对于盘块的回收和对其分配一样,都是相对较为复杂的操作 */
+				/* Unix采用混合索引方式,因而对于盘块的回收和对其分配一样,都是相对来说较为复杂的操作 */
 
 				/* 先读出该文件的长度,进而计算出它所占用的盘块数目 */
 				short count=convertFileLength(systemiNode[currentDIR[i].inodeNum].fileLength);
-				short j; //定义一个循环变量
+				short j,k; //定义一个循环变量
 
 				/* 直接地址块的回收 */
 				for(j=0;j<10;j++,count--){
@@ -751,13 +757,17 @@ void deleteFile(char _fileName[]){
 						/* 回收iNode */
 						systemiNode[currentDIR[i].inodeNum].fileLength=-1;
 						currentFreeiNodeNum++;
+
 						/* 清除目录项 */
 						currentDIR[i].inodeNum=-1;
+
 						/* 系统文件总数减一 */
 						systemFileNum--;
+
 						return 0;
 					}
 					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
+					systemiNode[currentDIR[i].inodeNum].iaddr[j]=-1;
 				}
 
 				FILE *file=fopen(diskName,"r+");
@@ -776,11 +786,14 @@ void deleteFile(char _fileName[]){
 							/* 回收iNode */
 							systemiNode[currentDIR[i].inodeNum].fileLength=-1;
 							currentFreeiNodeNum++;
+
 							/* 清除目录项 */
 							currentDIR[i].inodeNum=-1;
+
 							/* 系统文件总数减一 */
 							systemFileNum--;
 							fclose(file);
+
 							return 0;
 						}
 						recycleAnBlock(tempStack[j]);
@@ -793,25 +806,24 @@ void deleteFile(char _fileName[]){
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++){
-						/*if(tempStack[j]==-1){
-							fclose(file);
-							return 0;
-						}*/
 						fseek(file,1024*tempStack[j],SEEK_SET);
 						fread(innerTempStack,sizeof(short),512,SEEK_SET);
-						for(short k=0;k<512;k++,count--){
+						for(k=0;k<512;k++,count--){
 							if(count==0){
 								/* 回收iNode */
 								systemiNode[currentDIR[i].inodeNum].fileLength=-1;
 								currentFreeiNodeNum++;
+
 								/* 清除目录项 */
 								currentDIR[i].inodeNum=-1;
+
 								/* 系统文件总数减一 */
 								systemFileNum--;
+
 								fclose(file);
 								return 0;
 							}
-							allocateAnEmptyBlock(innerTempStack[k]);
+							recycleAnBlock(innerTempStack[k]);
 						}
 					}
 				}
@@ -834,7 +846,7 @@ void printCurrentDirInfo(){
 		tempLength=640;
 	else
 		tempLength=256;
-	char _fileType[10];
+	char _fileType[20];
 	for(short i=0;i<tempLength;i++){
 		/*  文件名   文件长度 文件类型 */
 		if(systemiNode[currentDIR[i].inodeNum].fileLength!=-1){

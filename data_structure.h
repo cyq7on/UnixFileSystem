@@ -55,7 +55,7 @@ const byte NORMAL=0; //普通文件
 const byte DIRECTORY=1; //目录文件
 const byte BLOCKDEVICE=2; //块设备文件
 const byte PIP=3; //管道文件
-const short totalBlockNum=20449; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
+short totalBlockNum=20449; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
 short superStack[51]; //空闲盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum; //系统当前的文件区空闲盘块数
 short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
@@ -64,9 +64,9 @@ short systemFileNum; //记录系统文件总数,打印系统信息时将用到�
 INODE systemiNode[640]; //系统iNode表,1#-20#盘块是文件系统的iNode区,本文件系统至多支持640个文件(含根目录)
 short currentFreeiNodeNum; //当前空闲的iNode数量
 dirItem rootDIR[640]; //系统根目录表,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包括子目录)
-dirItem tempDIR[256]; //系统临时目录表(切换到子目录时会将记录在盘块中的子目录表加载到这里)
+dirItem tempDir[256]; //系统临时目录表(切换到子目录时会将记录在盘块中的子目录表加载到这里)
 dirItem *currentDIR; //系统当前的目录指针
-char currentDirName[100]='\0'; //系统当前的目录名称
+char currentDirName[100]="\0"; //系统当前的目录名称
 INODE *currentDiriNode; //系统当前目录的iNode结点指针,设置这个指针是为了更方便地将系统iNode表的数据写回磁盘
 INODE *openedDirStack[639]; /* 在内存中维护的一个'被打开目录'的iNode栈,每打开一个子目录便将当前目录的iNode
 							   指针push进这个栈中当要返回父目录时,再将栈顶元素pop出来,栈顶指针为openedDirStack[0]
