@@ -160,7 +160,24 @@ int returnPreDir(){
 		return 0;
 	}
 	else{
-
+		/* 通过磁盘I/O,将上一级目录的目录表写入内存的临时目录区 */
+		FILE *file=fopen(diskName,"r");
+		if(!file){
+			printf("Error! Can't open the $DISK\n");
+			exit(0);
+		}
+		openedDirStackPointer--;
+		short i,j,count=0;
+		for(i=0;i<4;i++){
+			fseek(file,1024*openedDirStack[openedDirStackPointer]->iaddr[i],SEEK_SET);
+			for(j=0;j<64;j++){
+				fread(&tempDir[count++],sizeof(dirItem),1,file);
+			}			
+		}
+		currentDIR=tempDir; //切换当前目录指针
+		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
+		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
+		
 	}
 
 }
