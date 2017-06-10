@@ -53,7 +53,7 @@ void load(){
  	/* StepIX: 将空闲盘块号栈的状态位置0,表示当前无进程正在占用它 */
  	stackLock=0;
 
- 	/* 至此文件系统所有数据加载完毕,系统完成'开机'过程 */
+ 	/* 至此文件系统所有数据加载完毕,系统'开机'过程完成 */
 }
 
 
@@ -188,8 +188,8 @@ int openDir(char _dirName[]){
 int returnPreDir(){
 	if(!strcmp(currentDirName,"/"))
 		return 403;
-	
-	/* 如果上一级目录是根目录,则不需要进行I/O操作即可进行目录切换 */
+
+	/* 如果上一级目录是根目录,则不需要额外从磁盘去读目录表 */
 	if(openedDirStackPointer==1){
 		/* 进行目录切换的时候要将系统当前目录表写回磁盘 */
 
@@ -208,31 +208,46 @@ int returnPreDir(){
 		fclose(file);
 		/* 写回操作完成 */
 
-		openedDirStackPointer--; //更改openedDirStack栈的栈顶指针
+		openedDirStackPointer--; //更改openedDirStack的栈顶指针
 		strcpy(currentDirName,"/"); //切换当前目录名称
 		currentDIR=rootDIR; //切换当前目录指针
 		currentDiriNode=&systemiNode[0]; //切换当前目录的iNode指针
 		return 0;
 	}
 	else{
-		/* 通过磁盘I/O,将上一级目录的目录表写入内存的临时目录区 */
-		FILE *file=fopen(diskName,"r");
+		/* 如果上一级目录不是根目录,那么需要做两件事情,首先将系统当前目录表写回磁盘,然后将上一级目录的目录表
+		   拷贝到内存临时目录表中
+		*/
+
+		/* 将系统当前目录表写回磁盘 */
+		FILE *file=fopen(diskName,"r+");
 		if(!file){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
 		}
-		openedDirStackPointer--;
 		short i,j,count=0;
+		for(i=0;i<4;i++){
+			fseek(file,1024*currentDiriNode->iaddr[i],SEEK_SET);
+			for(j=0;j<64;j++)
+				fwrite(&currentDIR[count++],sizeof(dirItem),1,file);
+		}
+		/* 写回操作完成 */
+
+		/* 将上一级目录的目录表拷贝到内存临时目录表中 */
+		openedDirStackPointer--;
+		count=0; //将计数器置0
 		for(i=0;i<4;i++){
 			fseek(file,1024*openedDirStack[openedDirStackPointer]->iaddr[i],SEEK_SET);
 			for(j=0;j<64;j++){
 				fread(&tempDir[count++],sizeof(dirItem),1,file);
 			}			
 		}
+
 		currentDIR=tempDir; //切换当前目录指针
+
 		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
 		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
-		char tempString[80];
+		char tempString[80]='\0';
 		for(char *p=&currentDirName[0],int Number=0;*p!='\0'&&Number<=openedDirStackPointer;p++){
 			strcat(tempString,*p);
 			if(*p=='/')
@@ -255,7 +270,7 @@ void arrayCopy(short _blockNum){
 		exit(0);
 	}
 	fseek(file,1024*_blockNum,SEEK_SET);
-	fread(superStack,2,BLOCKNUM+1,file);
+	fread(superStack,sizeof(short),BLOCKNUM+1,file);
 	fclose(file);
 }
 
@@ -270,17 +285,20 @@ void arrayWrite(short _array[],short _blockNum){
 	fwrite(_array,sizeof(short),512,file);
 	fclose(file);
 }
+
+
 /* 
 	文件的大小是以Byte为单位给出的,但是对于磁盘空间的分配是以盘块为单位的.
-	本函数实现根据文件的字节长度计算其文件所需的盘块数
+	本函数实现根据文件的字节长度计算其文件所需要的盘块数
 */
 short convertFileLength(short _fileLength){
 	return _fileLength%1024==0?_fileLength/1024:_fileLength/1024+1;
 }
 
 
-/* 该函数实现分配一个空闲的文件区盘块,函数返回值是分配的盘块号 */
-/* 该操作需要用到空闲盘块号栈 */
+/* 盘块分配函数 */
+/* 输入参数: NULL */
+/* 返回: 分配成功则返回分配的盘块号,失败返回-1 */
 short allocateAnEmptyBlock(){
 	short result;
 	/* 正常情况.空闲盘块号栈中的空闲的盘块数大于1 */
