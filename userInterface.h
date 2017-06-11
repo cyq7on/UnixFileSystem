@@ -64,7 +64,7 @@ void creatFileInterface(){
 				getchar();
 				getchar();
 				printCurrentDirInfo();
-				printf("%d",currentFreeBlockNum);
+				//printf("%d",currentFreeBlockNum);
 				getchar();
 				continue;
 			}
@@ -174,14 +174,17 @@ void openFileInterface(){
 
 			printf("\t\t请输入您要打开的文件的名称:");
 			gets(_fileName);
+			//getchar();
 			while(1){
-
-				if(openFile(_fileName)==404){
+				stateCode=openFile(_fileName);
+				if(stateCode==0){
+					getchar();
+					break;
+				}
+				else{
 					printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
 					gets(_fileName);
 				}
-				else
-					break;
 			}
 
 		}
@@ -195,6 +198,68 @@ void openFileInterface(){
 
 	}
 
+}
+
+/* '删除文件'界面 */
+void deleteFileInterface(){
+	int userChoice,stateCode;
+	char _fileName[50];
+	
+	while(1){
+		system("cls");
+		printf("\n\n\t\t\t\t删除文件\n\n");
+
+		printf("\t\t 1.删除文件\n");
+		printf("\t\t 2.返回主菜单\n\n");
+		printf("\t\t请输入您要操作的序号:");
+		scanf("%d",&userChoice);
+		printf("\n\n");
+
+		if(userChoice==1){
+
+			/* 删除文件需要用户给出目标项的文件名 */
+			getchar();
+
+			/* 先当前目录下的所有文件显示出来 */
+			printf("\t\t当前目录下的文件如下:\n");
+			printCurrentDirInfo();
+
+
+			printf("\t\t请输入您要删除的文件的名称:");
+			gets(_fileName);
+
+			/* 过滤掉用户无端输入的回车 */
+			while(1){
+				if(_fileName[0]=='\0'){
+					gets(_fileName);
+					continue;
+				}
+				break;
+			}
+			
+			while(1){
+				stateCode=deleteFile(_fileName);
+				if(stateCode==0){
+					printf("\t\t文件删除成功!\n");
+					getchar();
+					break;
+				}
+				else{
+					printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
+					gets(_fileName);
+				}
+			}
+
+		}
+
+		else if(userChoice==2)
+			return;
+		else{
+			printf("\t\t您的输入有误!\n");
+			continue;
+		}
+
+	}
 }
 
 /* 系统主界面 */
@@ -231,6 +296,11 @@ void mainInterface(){
 		/* 打开文件 */
 		else if(userChoice==3){
 			openFileInterface();
+		}
+
+		/* 删除文件 */
+		else if(userChoice==4){
+			deleteFileInterface();
 		}
 
 	}

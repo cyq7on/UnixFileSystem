@@ -477,7 +477,6 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 
 	}
 	/*------------------------分配盘块END------------------------------*/
-
 	_inode->fileLength=_fileLength;
 	_inode->linkCount=_linkCount;
 
@@ -856,6 +855,9 @@ void printCurrentDirInfo(){
 		tempLength=256;
 	char _fileType[20];
 
+
+	printf("\n\t\t-------------------------------------\n");
+	//printf("\t\t文件名\t文件类型\t文件大小\n");
 	for(short i=tempLength==640?1:0;i<tempLength;i++){
 		/*  文件名   文件长度 文件类型 */
 		if(currentDIR[i].inodeNum==-1)
@@ -866,16 +868,17 @@ void printCurrentDirInfo(){
 			flag=1; 
 			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL){
 				strcpy(_fileType,"NORMAL");
-				printf("%s\t%dKB\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
+				printf("\t\t%s\t%dKB\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
 			}
 			else{
 				strcpy(_fileType,"DIRECTORY");
-				printf("%s/\t\t%s\n",currentDIR[i].fileName,_fileType);
+				printf("\t\t%s/\t\t%s\n",currentDIR[i].fileName,_fileType);
 			}
 		}
 	}
 	if(!flag)
 		printf("The current directory is empty!\n");
+	printf("\n\t\t-------------------------------------\n");
 }
 
 /* 显示整个文件系统的统计信息 */
@@ -921,13 +924,18 @@ int openFile(char _fileName[]){
 			/* 目标文件已找到 */
 
 			/* StepI: 打印文件名 */
-			printf("\n 文件名: %s",_fileName);
+			printf("\n\t文件名: %s",_fileName);
 
 			/* StepII: 打印文件类型 */
-			printf("\t 文件类型: %s",systemiNode[currentDIR[i].inodeNum].fileType);
+			char tempFileType[15];
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY)
+				strcpy(tempFileType,"DIRECTORY");
+			else
+				strcpy(tempFileType,"NORMAL");
+			printf("\t 文件类型: %s",tempFileType);
 
 			/* StepIII: 打印文件大小 */
-			printf("\t 文件大小: %d",systemiNode[currentDIR[i].inodeNum].fileLength);
+			printf("\t 文件大小: %d KB",systemiNode[currentDIR[i].inodeNum].fileLength);
 
 			/* StepIV: 打印文件占用的所有物理盘块号 */
 			printf("\n\t该文件占用的物理盘块号: ");
