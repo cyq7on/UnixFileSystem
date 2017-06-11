@@ -121,7 +121,7 @@ void format(){
 	/* 将初始化完毕的iNode写入系统iNode区(1#-20#盘块) */
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(systemiNode,sizeof(INODE),640,file);
-	fflush(file);
+	//fflush(file);
 
 
 	/* 将初始化的根目录表写入磁盘的21#-30#盘块 */
@@ -133,7 +133,7 @@ void format(){
 		rootDIR[i].inodeNum=-1;
 	fseek(file,1024*21,SEEK_SET);
 	fwrite(rootDIR,sizeof(dirItem),640,file);
-	fflush(file);
+	//fflush(file);
 	
 	
 
@@ -141,17 +141,16 @@ void format(){
 	fclose(file);
 
 	/* 启动新一轮测试 */
-	file=fopen(diskName,"r+");
-	INODE SYQ[640];
-	fseek(file,1024*1,SEEK_SET);
-	fread(SYQ,32,640,file);
-	fflush(file);
+	/*file=fopen(diskName,"r+");
+	dirItem SYQ[640];
+	fseek(file,1024*21,SEEK_SET);
+	fread(SYQ,16,640,file);
 
 	for(int ss=0;ss<10;ss++)
-		printf("%d, %d\n",ss,SYQ[ss].fileLength);
+		printf("%d, %d\n",ss,SYQ[ss].inodeNum);
 	getchar();
 
-	getchar();
+	getchar();*/
 }
 
 

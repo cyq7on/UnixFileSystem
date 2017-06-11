@@ -334,8 +334,8 @@ void deleteDirInterface(){
 /* '显示目录'界面 */
 void printDirInterface(){
 
-	printf("\n\n\t\t\t\t当前目录信息\n\n");
-	printf("\t\t----------------------------------------\n\n");
+	printf("\n\n\t\t\t\t当前目录信息\n");
+	//printf("\t\t----------------------------------------\n\n");
 
 	printCurrentDirInfo();
 
