@@ -27,9 +27,16 @@ void load(){
  	fread(systemiNode,sizeof(INODE),640,file); 
 
  	/* StepIII: 读取系统根目录表 */
- 	fseek(file,1024*21,SEEK_SET);
+ 	//fseek(file,1024*21,SEEK_SET);
  	fread(rootDIR,sizeof(dirItem),640,file);
  	fclose(file);
+
+	/* 临时测试 */
+	printf("测试开始:\n");
+	for(int i=0;i<10;i++)
+		printf("%d, %d\n",i,rootDIR[i].inodeNum);
+	getchar();
+
 
  	/* StepIV: 初始化系统当前目录指针 */ 
  	currentDIR=rootDIR; 
@@ -498,12 +505,12 @@ int creatFile(char _fileName[],int _fileLength){
 	   文件还是普通文件,同一目录下允许子目录和其中的文件同名,对于NORMAL类文件如果出现重名则拒绝
 	   执行文件创建操作.
 	*/
-	short tempLength;
+	short tempLength,i;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
 		tempLength=256;
-	for(short i=0;i<tempLength;i++){
+	for(i=0;i<tempLength;i++){
 		if(!strcmp(currentDIR[i].fileName,_fileName)){  //发现同名项
 			/* 如果这个同名项是目录,那么允许同名 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY) 
@@ -555,19 +562,23 @@ int creatFile(char _fileName[],int _fileLength){
 
 	/* 申请iNode */
 	/* 如何获取一个空白iNode号是一个值得考虑的问题,暂时采用线性扫描法 */
-	short tempiNodeNum=-1; //这个变量用来记录分配到的iNode号
-	for(short i=0;i<640;i++,tempiNodeNum++){
-		if(systemiNode[i].fileLength==-1)
+	short tempiNodeNum; //这个变量用来记录分配到的iNode号
+	for(i=0;i<640;i++){
+		if(systemiNode[i].fileLength==-1){
+			tempiNodeNum=i;
 			break;
+		}
 	}
 	creatiNode(&systemiNode[tempiNodeNum],NORMAL,_fileLength,1);
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
-	for(short i=0;i<tempLength;i++,tempDirNum++){
-		if(currentDIR[i].inodeNum==-1)
+	short tempDirNum; //tempDirNum用来记录分配到的目录项号
+	for(i=0;i<tempLength;i++){
+		if(currentDIR[i].inodeNum==-1){
+			tempDirNum=i;
 			break;
+		}
 	}
 
 	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
@@ -847,9 +858,13 @@ void printCurrentDirInfo(){
 	else
 		tempLength=256;
 	char _fileType[20];
-	for(short i=0;i<tempLength;i++){
+
+	for(short i=tempLength==640?1:0;i<tempLength;i++){
 		/*  文件名   文件长度 文件类型 */
-		if(systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
+		if(currentDIR[i].inodeNum==-1)
+			continue;
+		//if(systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
+		else{
 			/* flag用来标识当前目录是否为空目录,flag==0表示目录为空 */
 			flag=1; 
 			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL){
@@ -875,7 +890,7 @@ void printSystemInfo(){
 /* 本函数对用户输入的文件名(包括目录名)进行过滤 */
 /* 合法的文件名: 字母、数字或下划线 */
 /* 返回: 操作状态码: 403: 文件名非法,操作被拒绝 0: 文件名合格,操作成功 */
-void fileNameFilter(char _fileName[]){
+int fileNameFilter(char _fileName[]){
 	for(char *p=&_fileName[0];*p!='\0';p++){
 		if(!((*p>=0&&*p<=9) || (*p>='a'&&*p<='z') || (*p>='A'&&*p<='Z') || (*p=='_')))
 			return 403;
@@ -883,4 +898,4 @@ void fileNameFilter(char _fileName[]){
 	return 0;
 }
 
-
+#endif

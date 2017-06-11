@@ -112,13 +112,16 @@ void format(){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
+
 	/* 初始化系统iNode */
 	for(short i=0;i<640;i++)
 		systemiNode[i].fileLength=-1;
 
-	initialRootDIR(); //为根目录分配iNode
+	/* 为根目录分配iNode */
+	initialRootDIR(); 
 
 	/* 将初始化的根目录表写入磁盘的21#-30#盘块 */
+
 	/* 根目录的第一项(rootDIR[0])作为其自身的目录项 */
 	strcpy(rootDIR[0].fileName,"/");
 	rootDIR[0].inodeNum=0;
