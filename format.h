@@ -118,6 +118,12 @@ void format(){
 
 	initialRootDIR(); //为根目录分配iNode
 
+	/* 将初始化完毕的iNode写入系统iNode区(1#-20#盘块) */
+	fseek(file,1024*1,SEEK_SET);
+	fwrite(systemiNode,sizeof(INODE),640,file);
+	fflush(file);
+
+
 	/* 将初始化的根目录表写入磁盘的21#-30#盘块 */
 	/* 根目录的第一项(rootDIR[0])作为其自身的目录项 */
 	strcpy(rootDIR[0].fileName,"/");
@@ -127,23 +133,25 @@ void format(){
 		rootDIR[i].inodeNum=-1;
 	fseek(file,1024*21,SEEK_SET);
 	fwrite(rootDIR,sizeof(dirItem),640,file);
-
-	/* 临时测试 */
-	printf("临时测试开始\n");
-	dirItem tempTest[640];
-	fseek(file,1024*21,SEEK_SET);
-	fread(tempTest,sizeof(dirItem),640,file);
-	for(int i=0;i<10;i++)
-		printf("%d, %d\n",i,tempTest[i].inodeNum);
-	getchar();
-
-
-	/* 将初始化完毕的iNode写入系统iNode区(1#-20#盘块) */
-	fseek(file,1024*1,SEEK_SET);
-	fwrite(systemiNode,sizeof(INODE),640,file);
+	fflush(file);
+	
+	
 
 	/* 关闭文件,格式化操作完成 */
 	fclose(file);
+
+	/* 启动新一轮测试 */
+	file=fopen(diskName,"r+");
+	INODE SYQ[640];
+	fseek(file,1024*1,SEEK_SET);
+	fread(SYQ,32,640,file);
+	fflush(file);
+
+	for(int ss=0;ss<10;ss++)
+		printf("%d, %d\n",ss,SYQ[ss].fileLength);
+	getchar();
+
+	getchar();
 }
 
 

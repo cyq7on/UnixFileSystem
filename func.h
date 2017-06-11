@@ -623,10 +623,12 @@ int creatDir(char _dirName[]){
 
 	/* 申请iNode */
 	/* 如何获取一个空白iNode号是一个值得考虑的问题,暂时采用线性扫描法 */
-	short tempiNodeNum=-1; //这个变量用来记录分配到的iNode号
-	for(short i=0;i<640;i++,tempiNodeNum++){
-		if(systemiNode[i].fileLength==-1)
+	short tempiNodeNum; //这个变量用来记录分配到的iNode号
+	for(short i=0;i<640;i++){
+		if(systemiNode[i].fileLength==-1){
+			tempiNodeNum=i;
 			break;
+		}
 	}
 
 	creatiNode(&systemiNode[tempiNodeNum],DIRECTORY,1024*4,1);
