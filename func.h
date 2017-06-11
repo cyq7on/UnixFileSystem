@@ -895,6 +895,96 @@ int fileNameFilter(char _fileName[]){
 	return 0;
 }
 
+/* 打开文件函数 */
+/* 打开文件需要完成的任务是
+   1. 打印该文件的基本信息(文件名+文件类型+文件大小)
+   2. 打印该文件占用的物理盘块号
+   操作状态码: 404: 目标项未找到,操作失败  0: 操作成功
+*/
+int openFile(char _fileName[]){
+	short i,j,k,tempLength;
+	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
+		tempLength=640;
+	else
+		tempLength=256;
+	for(i=0;i<tempLength;i++){
+		if(!strcmp(currentDIR[i].fileName,_fileName)){
+			/* 找到同名项以后需要校验一下该项是否是非目录项,因为同级路径下允许目录名与文件名相同 */
+
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY)
+				continue;
+
+			/* 目标文件已找到 */
+
+			/* StepI: 打印文件名 */
+			printf("\n 文件名: %s",_fileName);
+
+			/* StepII: 打印文件类型 */
+			printf("\t 文件类型: %s",systemiNode[currentDIR[i].inodeNum].fileType);
+
+			/* StepIII: 打印文件大小 */
+			printf("\t 文件大小: %d",systemiNode[currentDIR[i].inodeNum].fileLength);
+
+			/* StepIV: 打印文件占用的所有物理盘块号 */
+			printf("\n\t该文件占用的物理盘块号: ");
+			int count=convertFileLength(systemiNode[currentDIR[i].inodeNum].fileLength);
+
+			/* 考虑到Unix增量式索引组织方式,因而这里的工作相对繁琐一些 */
+
+			/* 直接地址块 */
+			for(j=0;j<10;j++,count--){
+				if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1||count==0)
+					break;
+				printf("%d# ",systemiNode[currentDIR[i].inodeNum].iaddr[j]);
+			}
+
+			/* 一次间址 */
+			if(count>0){
+				short singleIndirect[512];
+				FILE *file=fopen(diskName,"r");
+				if(!file){
+					printf("Error! Can't open the $DISK\n");
+					exit(0);
+				}
+
+				fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[10],SEEK_SET);
+				fread(singleIndirect,sizeof(short),512,file);
+
+				for(j=0;j<512;j++){
+					if(singleIndirect[j]==-1)
+						continue;
+					else if(count==0){
+						fclose(file);
+						break;
+					}
+					else{
+						printf("%d# ",singleIndirect[j]);
+						count--;
+					}					
+				}
+
+				/* 二次间址 */
+				if(count>0){
+					short doubleIndirect[512];
+					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
+					fread(singleIndirect,sizeof(short),512,file);
+					for(j=0;j<512;j++){
+						fseek(file,1024*singleIndirect[j],SEEK_SET);
+
+						for(k=0;k<512;k++){
+							
+						}
+					}
+				}
+			}
+
+
+
+
+		}
+	}
+}
+
 #endif
 
 
