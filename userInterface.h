@@ -236,7 +236,7 @@ void deleteFileInterface(){
 				}
 				break;
 			}
-			
+
 			while(1){
 				stateCode=deleteFile(_fileName);
 				if(stateCode==0){
@@ -255,12 +255,108 @@ void deleteFileInterface(){
 		else if(userChoice==2)
 			return;
 		else{
-			printf("\t\t您的输入有误!\n");
+			printf("\t\t您的输入有误!摁下回车继续操作\n");
+			getchar();
 			continue;
 		}
 
 	}
 }
+
+/* '删除目录'界面 */
+void deleteDirInterface(){
+	int userChoice,stateCode;
+	char _dirName[50];
+	
+	while(1){
+		system("cls");
+		printf("\n\n\t\t\t\t删除目录\n\n");
+
+		printf("\t\t 1.删除目录\n");
+		printf("\t\t 2.返回主菜单\n\n");
+		printf("\t\t请输入您要操作的序号:");
+		scanf("%d",&userChoice);
+		printf("\n\n");
+
+		if(userChoice==1){
+
+			/* 删除目录需要用户给出所要删除的目录名 */
+			getchar();
+
+			/* 先当前目录下的所有文件显示出来 */
+			printf("\t\t当前目录下的文件如下:\n");
+			printCurrentDirInfo();
+
+
+			printf("\t\t请输入您要删除的目录名称:");
+			gets(_dirName);
+
+			/* 过滤掉用户无端输入的换行 */
+			while(1){
+				if(_dirName[0]=='\0'){
+					gets(_dirName);
+					continue;
+				}
+				break;
+			}
+
+			while(1){
+				stateCode=deleteDir(_dirName);
+				if(stateCode==404){
+					printf("\t\t您输入的目录名不存在,请您检查后重新输入:");
+					gets(_dirName);
+				}
+				else if(stateCode==403){
+					printf("\t\t您要删除的目录下包含有文件或子目录,无法删除该目录");
+					getchar();
+					break;
+				}
+				else{
+					printf("\t\t目录删除成功!\n");
+					getchar();
+					break;
+				}
+			}
+
+		}
+
+		else if(userChoice==2)
+			return;
+		else{
+			printf("\t\t您的输入有误!摁下回车继续操作\n");
+			getchar();
+			continue;
+		}
+
+	}
+}
+
+/* '显示目录'界面 */
+void printDirInterface(){
+
+	printf("\n\n\t\t\t\t当前目录信息\n\n");
+	printf("\t\t----------------------------------------\n\n");
+
+	printCurrentDirInfo();
+
+	printf("\n\t\t摁下任意键返回主菜单");
+	getchar();
+	getchar();
+}
+
+/* '显示系统信息'界面 */
+void printSystemInfoInterface(){
+	printf("\n\n\t\t\t\t系统信息\n\n");
+	printf("\t\t----------------------------------------\n\n");
+
+	printSystemInfo();
+
+	printf("\n\t\t----------------------------------------\n\n");
+	printf("\n\t\t摁下任意键返回主菜单");
+	getchar();
+	getchar();
+}
+
 
 /* 系统主界面 */
 void mainInterface(){
@@ -269,7 +365,7 @@ void mainInterface(){
 	int userChoice;
 	while(1){
 		system("cls");
-		printf("\n\n\t\t\tUnix File System\n");
+		printf("\n\n\t\t\tUNIX File System\n");
 		printf("\t------------------------------------------------\n\n");
 		printf("\t\t1. 建立文件\n");
 		printf("\t\t2. 建立子目录\n");
@@ -280,7 +376,7 @@ void mainInterface(){
 		printf("\t\t7. 显示整个系统的信息\n");
 		printf("\t\t8. 进入Shell模式\n");
 		printf("\t\t9. 关机\n");
-		printf("\n\n\t\t请输入您要操作的序号:");
+		printf("\n\n\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 
 		/* 建立文件 */
@@ -301,6 +397,43 @@ void mainInterface(){
 		/* 删除文件 */
 		else if(userChoice==4){
 			deleteFileInterface();
+		}
+
+		/* 删除目录 */
+		else if(userChoice==5){
+			deleteDirInterface();
+		}
+
+		/* 显示当前目录信息 */
+		else if(userChoice==6){
+			system("cls");
+			printDirInterface();
+		}
+
+		/* 显示系统当前信息 */
+		else if(userChoice==7){
+			system("cls");
+			printSystemInfoInterface();
+		}
+
+		/* 进入Shell模式 */
+		else if(userChoice==8){
+			/* PASS */
+		}
+
+		else if(userChoice==9){
+
+			/* 这一步不是摆设,而是有相当重要的作用,如果不'关机'而直接关闭命令行窗口
+			   则文件系统系统在下次启动的时候将会出错
+			*/
+			//printf("\n\n\t\t系统正在关机...\n\n");
+
+			shutDown();
+
+			printf("\n\n\t\t关机完成,摁下任意键退出");
+			getchar();
+			getchar();
+			exit(0);
 		}
 
 	}

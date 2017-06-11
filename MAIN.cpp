@@ -1,17 +1,13 @@
 #include "format.h"
 #include "data_structure.h"
-#include "init.h"
+//#include "init.h"
 #include "func.h"
 #include "userInterface.h"
-#include "shell.h"
+//#include "shell.h"
 
 int main(){
-	init();
-	groupLink();
-	FILE *file=fopen(diskName,"r");
-	short test[51];
-	fseek(file,1024*31,SEEK_SET);
-	fread(test,2,51,file);
-	for(short i=0;i<=50;i++)
-		printf("%d ",test[i]);
+	format();
+	load();
+	mainInterface();
+	return 0;
 }

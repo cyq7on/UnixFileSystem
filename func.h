@@ -877,7 +877,7 @@ void printCurrentDirInfo(){
 		}
 	}
 	if(!flag)
-		printf("The current directory is empty!\n");
+		printf("\t\tThe current directory is empty!\n");
 	printf("\n\t\t-------------------------------------\n");
 }
 
