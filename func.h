@@ -31,11 +31,6 @@ void load(){
  	fread(rootDIR,sizeof(dirItem),640,file);
  	fclose(file);
 
-	/* 临时测试 */
-	printf("测试开始:\n");
-	for(int i=0;i<10;i++)
-		printf("%d, %d\n",i,rootDIR[i].inodeNum);
-	getchar();
 
 
  	/* StepIV: 初始化系统当前目录指针 */ 
@@ -299,7 +294,7 @@ void arrayWrite(short _array[],short _blockNum){
 	文件的大小是以Byte为单位给出的,但是对于磁盘空间的分配是以盘块为单位的.
 	本函数实现根据文件的字节长度计算其文件所需要的盘块数
 */
-short convertFileLength(short _fileLength){
+int convertFileLength(int _fileLength){
 	return _fileLength%1024==0?_fileLength/1024:_fileLength/1024+1;
 }
 
@@ -523,7 +518,7 @@ int creatFile(char _fileName[],int _fileLength){
 	}
 
 	/* 先根据文件的字节长度计算该文件所需要占用的盘块数目 */
-	short fileLength=convertFileLength(_fileLength);
+	int fileLength=convertFileLength(_fileLength);
 
 	/* 文件长度如果超过剩余盘块数或者系统当前iNode已经用尽则无法再分配 */
 	/* 
@@ -892,7 +887,7 @@ void printSystemInfo(){
 /* 返回: 操作状态码: 403: 文件名非法,操作被拒绝 0: 文件名合格,操作成功 */
 int fileNameFilter(char _fileName[]){
 	for(char *p=&_fileName[0];*p!='\0';p++){
-		if(!((*p>=0&&*p<=9) || (*p>='a'&&*p<='z') || (*p>='A'&&*p<='Z') || (*p=='_')))
+		if(!((*p>='0'&&*p<='9') || (*p>='a'&&*p<='z') || (*p>='A'&&*p<='Z') || (*p=='_')))
 			return 403;
 	}
 	return 0;
