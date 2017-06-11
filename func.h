@@ -880,7 +880,11 @@ void printCurrentDirInfo(){
 
 /* 显示整个文件系统的统计信息 */
 void printSystemInfo(){
-	/*  */
+	/* StepI: 显示系统文件总数 */
+	printf("\t\t系统当前的文件总数为: %d \n",systemFileNum);
+
+	/* StepII: 显示系统剩余容量 */
+	printf("\t\t系统当前可用的空闲盘块数为: %d \n",currentFreeBlockNum);
 }
 
 /* 非法输入过滤器 */
@@ -934,7 +938,7 @@ int openFile(char _fileName[]){
 			/* 直接地址块 */
 			for(j=0;j<10;j++,count--){
 				if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1||count==0)
-					break;
+					return 0;
 				printf("%d# ",systemiNode[currentDIR[i].inodeNum].iaddr[j]);
 			}
 
@@ -955,7 +959,7 @@ int openFile(char _fileName[]){
 						continue;
 					else if(count==0){
 						fclose(file);
-						break;
+						return 0;
 					}
 					else{
 						printf("%d# ",singleIndirect[j]);
@@ -970,9 +974,17 @@ int openFile(char _fileName[]){
 					fread(singleIndirect,sizeof(short),512,file);
 					for(j=0;j<512;j++){
 						fseek(file,1024*singleIndirect[j],SEEK_SET);
+						fread(doubleIndirect,sizeof(short),512,file);
 
 						for(k=0;k<512;k++){
-							
+							if(doubleIndirect[k]==-1)
+								continue;
+							else if(count==0)
+								return 0;
+							else{
+								printf("%d# ",doubleIndirect[k]);
+								count--;
+							}
 						}
 					}
 				}
@@ -983,8 +995,9 @@ int openFile(char _fileName[]){
 
 		}
 	}
+
+	/* 目标项未找到 */
+	return 404;
 }
 
 #endif
-
-

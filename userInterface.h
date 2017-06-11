@@ -79,7 +79,7 @@ void creatFileInterface(){
 	}
 }
 
-/* 建立子目录界面 */
+/* '建立子目录'界面 */
 void creatDirInterface(){
 	int userChoice,stateCode;
 	char _dirName[50];
@@ -147,6 +147,55 @@ void creatDirInterface(){
 	}
 }
 
+/* '打开文件'界面 */
+void openFileInterface(){
+	int userChoice,stateCode;
+	char _fileName[50];
+	
+	while(1){
+		system("cls");
+		printf("\n\n\t\t\t\t打开文件\n\n");
+
+		printf("\t\t 1.打开文件\n");
+		printf("\t\t 2.返回主菜单\n\n");
+		printf("\t\t请输入您要操作的序号:");
+		scanf("%d",&userChoice);
+		printf("\n\n");
+
+		if(userChoice==1){
+
+			/* 打开文件需要用户给出目标项的文件名 */
+			getchar();
+
+			/* 先当前目录下的所有文件显示出来 */
+			printf("\t\t当前目录下的文件如下:\n");
+			printCurrentDirInfo();
+
+
+			printf("\t\t请输入您要打开的文件的名称:");
+			gets(_fileName);
+			while(1){
+
+				if(openFile(_fileName)==404){
+					printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
+					gets(_fileName);
+				}
+				else
+					break;
+			}
+
+		}
+
+		else if(userChoice==2)
+			return;
+		else{
+			printf("\t\t您的输入有误!\n");
+			continue;
+		}
+
+	}
+
+}
 
 /* 系统主界面 */
 void mainInterface(){
@@ -173,9 +222,17 @@ void mainInterface(){
 		if(userChoice==1){
 			creatFileInterface();
 		}
+
+		/* 建立子目录 */
 		else if(userChoice==2){
 			creatDirInterface();
 		}
+
+		/* 打开文件 */
+		else if(userChoice==3){
+			openFileInterface();
+		}
+
 	}
 	
 
