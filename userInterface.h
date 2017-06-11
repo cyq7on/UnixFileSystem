@@ -9,14 +9,16 @@ void creatFileInterface(){
 	int userChoice;
 	char _fileName[50];
 	int _fileLength,stateCode;
+	
 	while(1){
 		system("cls");
-		printf("\n\n\t\t\t建立文件\n\n");
+		printf("\n\n\t\t\t\t建立文件\n\n");
 
 		printf("\t\t 1.建立文件\n");
 		printf("\t\t 2.返回主菜单\n\n");
 		printf("\t\t请输入您要操作的序号:");
 		scanf("%d",&userChoice);
+		printf("\n\n");
 		if(userChoice==1){
 
 			/* 创建文件需要给出文件名和文件长度 */
@@ -46,18 +48,23 @@ void creatFileInterface(){
 			/* 文件名和文件长度输入完毕,下面正式开始文件创建工作 */
 			stateCode=creatFile(_fileName,_fileLength);
 			if(stateCode==500){
-				printf("\t\t对不起,当前目录下已存在同名文件,请您重新开始文件创建操作\n");
+				printf("\n\t\t对不起,当前目录下已存在同名文件,请您重新开始文件创建操作\n");
 				getchar(); //空读
+				getchar();
 				continue;
 			}
 			else if(stateCode==403){
-				printf("\t\t对不起,系统当前空间不足,文件创建失败!\n");
+				printf("\n\t\t对不起,系统当前空间不足,文件创建失败!\n");
+				getchar();
 				getchar();
 				continue;
 			}
 			else{
-				printf("\t\t文件创建成功!\n");
+				printf("\n\t\t文件创建成功(摁下回车继续操作)!\n");
 				getchar();
+				getchar();
+				printCurrentDirInfo();
+				printf("%d",currentFreeBlockNum);
 				getchar();
 				continue;
 			}
@@ -69,6 +76,74 @@ void creatFileInterface(){
 			continue;
 		}
 					
+	}
+}
+
+/* 建立子目录界面 */
+void creatDirInterface(){
+	int userChoice,stateCode;
+	char _dirName[50];
+	
+	while(1){
+		system("cls");
+		printf("\n\n\t\t\t\t建立子目录\n\n");
+
+		printf("\t\t 1.建立子目录\n");
+		printf("\t\t 2.返回主菜单\n\n");
+		printf("\t\t请输入您要操作的序号:");
+		scanf("%d",&userChoice);
+		printf("\n\n");
+
+		if(userChoice==1){
+
+			/* 创建子目录只需给出子目录名称即可 */
+			getchar();
+			printf("\t\t请输入您要创建的目录名称:");
+			gets(_dirName);
+			while(1){
+
+				/* 子目录的命名规则和普通文件一样,因而可以与文件使用同一个过滤器 */
+				if(fileNameFilter(_dirName)==403){
+					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线),请您重新输入:");
+					gets(_dirName);
+				}
+				else
+					break;
+			}
+
+			/* 对目录名称的合法性检查完毕,下面正是开始创建工作 */
+			stateCode=creatDir(_dirName);
+			if(stateCode==500){
+				printf("\n\t\t对不起,当前目录下已存在同名子目录,请您重新开始目录创建操作\n");
+				getchar(); //空读
+				getchar();
+				continue;
+			}
+			else if(stateCode==403){
+				printf("\n\t\t对不起,系统当前空间不足,目录创建失败!\n");
+				getchar();
+				getchar();
+				continue;
+			}
+			else{
+				printf("\n\t\t目录创建成功(摁下回车继续操作)!\n");
+				getchar();
+				getchar();
+				printCurrentDirInfo();
+				//printf("%d",currentFreeBlockNum);
+				getchar();
+				continue;
+			}
+
+		}
+
+		else if(userChoice==2)
+			return;
+		else{
+			printf("\t\t您的输入有误!\n");
+			continue;
+		}
+
 	}
 }
 
@@ -97,6 +172,9 @@ void mainInterface(){
 		/* 建立文件 */
 		if(userChoice==1){
 			creatFileInterface();
+		}
+		else if(userChoice==2){
+			creatDirInterface();
 		}
 	}
 	

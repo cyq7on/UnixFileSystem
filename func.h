@@ -634,10 +634,12 @@ int creatDir(char _dirName[]){
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	short tempDirNum=-1; //tempDirNum用来记录分配到的目录项号
-	for(short i=0;i<tempLength;i++,tempDirNum++){
-		if(currentDIR[i].inodeNum==-1)
+	short tempDirNum; //tempDirNum用来记录分配到的目录项号
+	for(short i=0;i<tempLength;i++){
+		if(currentDIR[i].inodeNum==-1){
+			tempDirNum=i;
 			break;
+		}
 	}
 
 	/* 写入文件名(注意:strcpy()方法不会对内存做限制,长度超限会造成缓冲区溢出,产生不可预知的错误) */
@@ -894,3 +896,5 @@ int fileNameFilter(char _fileName[]){
 }
 
 #endif
+
+
