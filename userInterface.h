@@ -174,18 +174,10 @@ void openFileInterface(){
 
 			printf("\t\t请输入您要打开的文件的名称:");
 			gets(_fileName);
-			//getchar();
-			while(1){
-				stateCode=openFile(_fileName);
-				if(stateCode==0){
-					getchar();
-					break;
-				}
-				else{
-					printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
-					gets(_fileName);
-				}
-			}
+			
+			openFile(_fileName);
+			getchar();
+				
 
 		}
 

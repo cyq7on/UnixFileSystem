@@ -344,6 +344,7 @@ void recycleAnBlock(short _diskNum){
 		}
 		fseek(file,1024*_diskNum,SEEK_SET);
 		fwrite(superStack,sizeof(short),51,file);
+		//if(file!=NULL)
 		fclose(file);
 		superStack[0]=1;
 		superStack[1]=_diskNum;
@@ -404,7 +405,7 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 	/* 非目录文件盘块的分配 */
 	/* Unix采用混合索引方式,因而对于盘块的分配是一个相对复杂的过程 */
 	else{
-		short count=convertFileLength(_fileLength); //计算需要分配给文件的盘块数
+		int count=convertFileLength(_fileLength); //计算需要分配给文件的盘块数
 
 		/* 先计算此次分配所需使用的盘块数,注意Unix采用混合索引分配方式,因而计算所需盘块数时要考虑索引块*/
 		int needIndexBlockNum; 
@@ -470,7 +471,7 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 				arrayWrite(singleIndirect,_inode->iaddr[11]);
 			}
 			//到二级索引的时候,文件系统支持的文件长度已经达到256MB以上了,完全支持对整个$DISK的操作
-			//因而三级索引先一放,最后有时间再来补充
+			
 		}
 
 
@@ -778,7 +779,7 @@ int deleteFile(char _fileName[]){
 				}
 
 				FILE *file=fopen(diskName,"r+");
-				if(!file){
+				if(file==NULL){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
 				}
@@ -817,13 +818,16 @@ int deleteFile(char _fileName[]){
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++){
 						fseek(file,1024*tempStack[j],SEEK_SET);
-						fread(innerTempStack,sizeof(short),512,SEEK_SET);
+						fread(innerTempStack,sizeof(short),512,file);
 						for(k=0;k<512;k++,count--){
 							if(count==0){
-								/* 先回收当前的内层索引块 */
+								/* 回收最后一个文件块 */
+								recycleAnBlock(innerTempStack[k]);
+
+								/* 回收当前的内层索引块 */
 								recycleAnBlock(tempStack[j]);
 
-								/* 再回收二次间址块 */
+								/* 回收二次间址块 */
 								recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[11]);
 
 								/* 回收iNode */
