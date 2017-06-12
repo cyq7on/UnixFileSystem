@@ -715,7 +715,6 @@ int deleteDir(char _dirName[]){
 				/* StepIII: 回收目录项 */
 				currentDIR[i].inodeNum=-1;
 
-				currentFreeBlockNum+=4; //系统空闲盘块数加四
 				currentFreeiNodeNum++; //系统iNode数加一
 
 				/* 至此,目录回收工作完成 */
@@ -792,6 +791,9 @@ int deleteFile(char _fileName[]){
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++,count--){
 						if(count==0){
+							/* 回收一次索引块 */
+							recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[10]);
+
 							/* 回收iNode */
 							systemiNode[currentDIR[i].inodeNum].fileLength=-1;
 							currentFreeiNodeNum++;
@@ -819,6 +821,12 @@ int deleteFile(char _fileName[]){
 						fread(innerTempStack,sizeof(short),512,SEEK_SET);
 						for(k=0;k<512;k++,count--){
 							if(count==0){
+								/* 先回收当前的内层索引块 */
+								recycleAnBlock(tempStack[j]);
+
+								/* 再回收二次间址块 */
+								recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[11]);
+
 								/* 回收iNode */
 								systemiNode[currentDIR[i].inodeNum].fileLength=-1;
 								currentFreeiNodeNum++;
@@ -834,6 +842,9 @@ int deleteFile(char _fileName[]){
 							}
 							recycleAnBlock(innerTempStack[k]);
 						}
+
+						/* 回收内层索引块 */
+						recycleAnBlock(tempStack[j]);
 					}
 				}
 
