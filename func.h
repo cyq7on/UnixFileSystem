@@ -27,7 +27,7 @@ void load(){
  	fread(systemiNode,sizeof(INODE),640,file); 
 
  	/* StepIII: 读取系统根目录表 */
- 	//fseek(file,1024*21,SEEK_SET);
+ 	fseek(file,1024*21,SEEK_SET);
  	fread(rootDIR,sizeof(dirItem),640,file);
  	fclose(file);
 

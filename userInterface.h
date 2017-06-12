@@ -375,7 +375,8 @@ void mainInterface(){
 		printf("\t\t6. 显示目录\n");
 		printf("\t\t7. 显示整个系统的信息\n");
 		printf("\t\t8. 进入Shell模式\n");
-		printf("\t\t9. 关机\n");
+		printf("\t\t9. 格式化磁盘\n");
+		printf("\t\t10. 关机\n");
 		printf("\n\n\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 
@@ -421,7 +422,20 @@ void mainInterface(){
 			/* PASS */
 		}
 
+		/* 格式化磁盘 */
 		else if(userChoice==9){
+			int isFormatChoice;
+			printf("\n危险!格式化磁盘将抹掉系统所有数据,并还原所有系统参数,您确定要继续吗？(此操作不可逆),确定请输入1 ");
+			scanf("%d",&isFormatChoice);
+			if(isFormatChoice==1){
+				printf("\n\t\t正在格式化,请稍后...");
+				format();
+				printf("\n\t\t格式化完成!摁任意键继续");
+				getchar();
+				getchar();
+			}
+		}
+		else if(userChoice==10){
 
 			/* 这一步不是摆设,而是有相当重要的作用,如果不'关机'而直接关闭命令行窗口
 			   则文件系统系统在下次启动的时候将会出错
