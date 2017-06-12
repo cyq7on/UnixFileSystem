@@ -32,7 +32,6 @@ void load(){
  	fclose(file);
 
 
-
  	/* StepIV: 初始化系统当前目录指针 */ 
  	currentDIR=rootDIR; 
 
@@ -505,7 +504,7 @@ int creatFile(char _fileName[],int _fileLength){
 	else
 		tempLength=256;
 	for(i=0;i<tempLength;i++){
-		if(!strcmp(currentDIR[i].fileName,_fileName)){  //发现同名项
+		if(!strcmp(currentDIR[i].fileName,_fileName)&&currentDIR[i].inodeNum!=-1){  //发现同名项
 			/* 如果这个同名项是目录,那么允许同名 */
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY) 
 				continue; //这里不能直接break,必须要遍历完整个目录(因为有可能当前目录下有同名的目录和文件)
@@ -919,23 +918,23 @@ int fileNameFilter(char _fileName[]){
 /* 打开文件需要完成的任务是
    1. 打印该文件的基本信息(文件名+文件类型+文件大小)
    2. 打印该文件占用的物理盘块号
-   操作状态码: 404: 目标项未找到,操作失败  0: 操作成功
 */
-int openFile(char _fileName[]){
+void openFile(char _fileName[]){
 	short i,j,k,tempLength;
+	int flag=0;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
 		tempLength=256;
 	for(i=0;i<tempLength;i++){
-		if(!strcmp(currentDIR[i].fileName,_fileName)){
+		if(!strcmp(currentDIR[i].fileName,_fileName)&&currentDIR[i].inodeNum!=-1){
 			/* 找到同名项以后需要校验一下该项是否是非目录项,因为同级路径下允许目录名与文件名相同 */
 
 			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY)
 				continue;
 
 			/* 目标文件已找到 */
-
+			flag=1;
 			/* StepI: 打印文件名 */
 			printf("\n\t文件名: %s",_fileName);
 
@@ -958,8 +957,11 @@ int openFile(char _fileName[]){
 
 			/* 直接地址块 */
 			for(j=0;j<10;j++,count--){
-				if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1||count==0)
-					return 0;
+				if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1||count==0){
+					getchar();
+					
+					return;
+				}
 				printf("%d# ",systemiNode[currentDIR[i].inodeNum].iaddr[j]);
 			}
 
@@ -980,7 +982,9 @@ int openFile(char _fileName[]){
 						continue;
 					else if(count==0){
 						fclose(file);
-						return 0;
+						getchar();
+						
+						return;
 					}
 					else{
 						printf("%d# ",singleIndirect[j]);
@@ -1000,8 +1004,11 @@ int openFile(char _fileName[]){
 						for(k=0;k<512;k++){
 							if(doubleIndirect[k]==-1)
 								continue;
-							else if(count==0)
-								return 0;
+							else if(count==0){
+								getchar();
+								
+								return;
+							}
 							else{
 								printf("%d# ",doubleIndirect[k]);
 								count--;
@@ -1018,7 +1025,10 @@ int openFile(char _fileName[]){
 	}
 
 	/* 目标项未找到 */
-	return 404;
+	if(!flag){
+		printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
+		getchar();
+	}
 }
 
 #endif
