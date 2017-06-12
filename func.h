@@ -59,7 +59,8 @@ void load(){
 
 
 /* 本函数将系统iNode表写回磁盘 */
-/* iNode表是在内存中维护的一个系统表,每次有新的改动后最好将其立即写回磁盘 */
+/* iNode表是在内存中维护的一个系统表,这个表是系统的索引结点表,整个系统只有一张索引结点表 */
+/* 每次在'开机'时系统会从1#-20#盘块将该表拷贝到内存中,相应地,系统在'关机'时也需要将内存中的索引表写回到磁盘中 */
 void writeiNode(){
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
@@ -71,9 +72,12 @@ void writeiNode(){
 	fclose(file);
 }
 
-/* 将系统当前目录的目录表写回磁盘 */
+/* 将系统'当前目录'的目录表写回磁盘 */
 /* 对于系统根目录表的写回是比较简单的,因为根目录占用的物理盘块号是固定的(21#-30#)
    如果是子目录则需要先获取子目录分配到的盘块的盘块号,再将数据写回
+*/
+/* 当系统处于运行状态时,根目录表一直在内存中,而子目录表系统至多保存一个,因而在进行目录切换时,如果当前目录不是根目录则
+   需要先调用本函数将系统中的子目录表中写回磁盘对应的盘块中
 */
 void writeCurrentDir(){
 	FILE *file=fopen(diskName,"r+");
@@ -112,15 +116,22 @@ void shutDown(){
 	/* 将当前iNode表写回磁盘 */
 	writeiNode();
 
-	/* 将当前目录栈表写回磁盘 */
+	/* 将当前目录表写回磁盘 */
 	writeCurrentDir();
 
-	/* 将空闲盘块号栈写回磁盘 */
 	FILE *file=fopen(diskName,"r+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
 	}
+	/* 如果关机时的'当前目录'不是系统根目录,则需要再将系统根目录表写回 */
+	if(strcmp(currentDirName,"/")){
+		fseek(file,1024*21,SEEK_SET);
+		fwrite(rootDIR,sizeof(dirItem),640,file);
+	}
+
+
+	/* 将空闲盘块号栈写回磁盘 */
 	fseek(file,0,SEEK_SET);
 	fwrite(superStack,sizeof(short),51,file);
 
@@ -134,9 +145,10 @@ void shutDown(){
 
 /* 打开当前路径下的指定子目录 */
 /* 本函数完成的工作: 将系统当前目录切换到子目录并在内存中加载子目录表 */
+/* 需要注意一点: 如果系统当前目录不是根目录,则进行目录切换时需要先将当前目录表写回磁盘 */
 /* 输入参数: 子目录名称 */
-/* 返回: 操作状态码 0:操作成功 404:目标项未找到 */
-int openDir(char _dirName[]){
+/* 返回: NULL */
+void openDir(char _dirName[]){
 	short tempLength;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
@@ -145,9 +157,16 @@ int openDir(char _dirName[]){
 	for(short i=0;i<tempLength;i++){
 		/* 扫描到目录项需要同时满足两个条件 I:fileName是相同的 II:fileType必须为DICTORY */
 		if(!strcmp(currentDIR[i].fileName,_dirName)){
-			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY){
+
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
 				/* 已找到目标目录项 */
-				/* 下一步工作是将该目录表的所有目录项提取到系统临时目录表(tempDir)中 */
+
+				/* 如果系统当前目录不是根目录,则需要先将系统当前目录表写回磁盘 */
+				if(tempLength!=640){
+					writeCurrentDir();
+				}
+
+				/* 下一步工作是将子目录表的所有目录项提取到系统临时目录表(tempDir)中 */
 				short j,k,count=0;
 				FILE *file=fopen(diskName,"r");
 				if(!file){
@@ -160,6 +179,7 @@ int openDir(char _dirName[]){
 						fread(&tempDir[count++],sizeof(dirItem),1,file);
 				}
 				fclose(file);
+
 				/* 已将盘块中的目录数据加载至系统内存的临时目录表中 */
 				/* 将当前目录的iNode指针push进路径栈中 */
 				openedDirStack[++openedDirStackPointer]=&systemiNode[currentDIR[i].inodeNum];
@@ -173,14 +193,20 @@ int openDir(char _dirName[]){
 					strcat(currentDirName,_dirName); 
 				}
 				
+				/* 切换当前目录的iNode结点指针 */
+				currentDiriNode=&systemiNode[currentDIR[i].inodeNum];
+
 				/* 切换系统当前目录指针 */
 				currentDIR=tempDir; 
-				return 0;
+				
+				return ;
 			}
 		}
 	}
 	/* 目标项未找到 */
-	return 404;
+	//return 404;
+	printf("未找到指定目录！\n");
+	getchar();
 }
 
 /* 返回上一级目录 */
@@ -605,9 +631,11 @@ int creatDir(char _dirName[]){
 
 	/* 检测当前路径下是否有同名的目录项 */
 	for(short i=0;i<tempLength;i++){
+
 		/* 如果同名的目录项是非目录文件,那么允许同名,否则拒绝执行目录创建操作 */
 		if(!strcmp(currentDIR[i].fileName,_dirName)){
-			if(!systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY)
+			/* 发现同名项,下面检测一下这一项是否是目录项,如果不是则可忽略 */
+			if(systemiNode[currentDIR[i].inodeNum].fileType!=DIRECTORY)
 				continue;
 			else
 				return 403;
@@ -650,7 +678,7 @@ int creatDir(char _dirName[]){
 	currentDIR[tempDirNum].inodeNum=tempiNodeNum;
 
 	/* 目录创建工作完成 */
-	return 1;
+	return 0;
 
 }
 
