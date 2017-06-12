@@ -87,14 +87,6 @@ void initialRootDIR(){
 	systemiNode[0].iaddr[10]=-1; //结束标志位
 	systemiNode[0].fileLength=10240;
 	systemiNode[0].linkCount=0; /* 这里有疑问 暂时保留这个问题 */
-	/*FILE *file=fopen(diskName,"r+");
-	if(!file){
-		printf("Error! Can't open the $DISK\n");
-		exit(0);
-	}
-	fseek(file,1024*1,SEEK_SET);
-	fwrite(&systemiNode[0],sizeof(INODE),1,file);
-	fclose(file);*/
 }
 
 /* 格式化磁盘,这是一个'危险'的动作,执行此函数将抹掉系统所有数据,并将系统还原到初始状态 */
@@ -122,7 +114,6 @@ void format(){
 	/* 将初始化完毕的iNode写入系统iNode区(1#-20#盘块) */
 	fseek(file,1024*1,SEEK_SET);
 	fwrite(systemiNode,sizeof(INODE),640,file);
-	//fflush(file);
 
 
 	/* 将初始化的根目录表写入磁盘的21#-30#盘块 */
@@ -134,24 +125,11 @@ void format(){
 		rootDIR[i].inodeNum=-1;
 	fseek(file,1024*21,SEEK_SET);
 	fwrite(rootDIR,sizeof(dirItem),640,file);
-	//fflush(file);
 	
 	
 
 	/* 关闭文件,格式化操作完成 */
 	fclose(file);
-
-	/* 启动新一轮测试 */
-	/*file=fopen(diskName,"r+");
-	dirItem SYQ[640];
-	fseek(file,1024*21,SEEK_SET);
-	fread(SYQ,16,640,file);
-
-	for(int ss=0;ss<10;ss++)
-		printf("%d, %d\n",ss,SYQ[ss].inodeNum);
-	getchar();
-
-	getchar();*/
 }
 
 

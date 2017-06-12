@@ -99,13 +99,15 @@ void creatDirInterface(){
 			/* 创建子目录只需给出子目录名称即可 */
 			getchar();
 			printf("\t\t请输入您要创建的目录名称:");
-			gets(_dirName);
+			//gets(_dirName);
+			scanf("%s",_dirName);
 			while(1){
 
 				/* 子目录的命名规则和普通文件一样,因而可以与文件使用同一个过滤器 */
 				if(fileNameFilter(_dirName)==403){
 					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线),请您重新输入:");
-					gets(_dirName);
+					//gets(_dirName);
+					scanf("%s",_dirName);
 				}
 				else
 					break;
@@ -417,18 +419,18 @@ void mainInterface(){
 		else if(userChoice==8){
 			char _childDirName[50];
 			printf("\n\t\t当前目录下的文件如下: \n");
-			printDirInterface();
+			printCurrentDirInfo();
 
 			printf("\n\t\t请输入您要切换到的子目录名称: ");
-			gets(_childDirName);
+			//gets(_childDirName);
+			scanf("%s",_childDirName);
 			openDir(_childDirName);
 			
 		}
 
 		/* 返回上一级目录 */
 		else if(userChoice==9){
-			/* 将路径栈栈顶元素从栈中弹出来 */
-			currentDiriNode=openedDirStack[--openedDirStackPointer];
+			returnPreDir();
 		}
 		/* 进入Shell模式 */
 		else if(userChoice==10){

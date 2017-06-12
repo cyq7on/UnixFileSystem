@@ -166,7 +166,7 @@ void openDir(char _dirName[]){
 					writeCurrentDir();
 				}
 
-				/* 下一步工作是将子目录表的所有目录项提取到系统临时目录表(tempDir)中 */
+				/* 下一步工作是将子目录表的所有目录项加载到系统临时目录表(tempDir)中 */
 				short j,k,count=0;
 				FILE *file=fopen(diskName,"r");
 				if(!file){
@@ -274,12 +274,14 @@ int returnPreDir(){
 
 		/* 下一步的工作是截掉currentDirName从最后一个出现的'/'到字符串结尾的这段子串 */
 		/* 例如当前目录是'/usr/bin/test',则需要截掉'/test',将其转化为'/usr/bin' */
-		char tempString[80];
+		char tempString[80]="\0";
 		int Number=0,pointer=0;
-		for(char *p=&currentDirName[0];*p!='\0'&&Number<=openedDirStackPointer;p++){
-			tempString[pointer++]=*p;
+		for(char *p=&currentDirName[0];*p!='\0';p++){
 			if(*p=='/')
 				Number++;
+			if(Number>openedDirStackPointer)
+				break;
+			tempString[pointer++]=*p;
 		}
 		strcpy(currentDirName,tempString); //切换当前目录名称
 		return 0;			
