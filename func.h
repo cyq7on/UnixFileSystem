@@ -156,16 +156,16 @@ void openDir(char _dirName[]){
 	else
 		tempLength=256;
 	for(short i=0;i<tempLength;i++){
-		/* 扫描到目录项需要同时满足两个条件 I:fileName是相同的 II:fileType必须为DICTORY */
-		if(!strcmp(currentDIR[i].fileName,_dirName)){
+		/* 扫描到目录项需要同时满足两个条件 I:fileName是相同的 II:fileType必须为DIRECTORY */
+		if(!strcmp(currentDIR[i].fileName,_dirName)){ //fileName相同,条件I已满足
 
-			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
+			if(systemiNode[currentDIR[i].inodeNum].fileType==DIRECTORY&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){ //fileType为DIRECTORY,条件II已满足
+
 				/* 已找到目标目录项 */
 
 				/* 如果系统当前目录不是根目录,则需要先将系统当前目录表写回磁盘 */
-				if(tempLength!=640){
+				if(tempLength!=640)
 					writeCurrentDir();
-				}
 
 				/* 下一步工作是将子目录表的所有目录项加载到系统临时目录表(tempDir)中 */
 				short j,k,count=0;
@@ -415,13 +415,14 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 			exit(0);
 		}
 
+		for(k=0;k<64;k++){
+				tempOneBlockDir[k].inodeNum=-1;
+		}
 		/* 向系统申请四个空闲盘块 */
 		for(i=0;i<4;i++){
 			_inode->iaddr[i]=allocateAnEmptyBlock();
 			/* 分配完四个盘块以后,将这四个盘块写满空目录项 */
-			for(k=0;k<64;k++){
-				tempOneBlockDir[k].inodeNum=-1;
-			}
+			
 			/* 将目录项写入磁盘 */
 			fseek(file,1024*_inode->iaddr[i],SEEK_SET);
 			fwrite(tempOneBlockDir,sizeof(dirItem),64,file);
@@ -908,17 +909,17 @@ void printCurrentDirInfo(){
 	char _fileType[20]="\0";
 
 
-	printf("\n\t\t-------------------------------------\n");
-	//printf("\t\t文件名\t文件类型\t文件大小\n");
+	printf("\n\t\t-------------------------------------\n\n");
 	for(short i=tempLength==640?1:0;i<tempLength;i++){
 		/*  文件名   文件长度 文件类型 */
-		if(currentDIR[i].inodeNum==-1)
+		if(currentDIR[i].inodeNum<0||currentDIR[i].inodeNum>=640)
 			continue;
-		//if(systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
 		else{
 			/* flag用来标识当前目录是否为空目录,flag==0表示目录为空 */
 			flag=1; 
-			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
+			int s=currentDIR[i].inodeNum;
+			int x=s;
+			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL){
 				strcpy(_fileType,"NORMAL");
 				printf("\t\t%s\t%dByte\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
 			}

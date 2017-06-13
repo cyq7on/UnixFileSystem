@@ -53,13 +53,12 @@ const short BLOCKNUM=50; //Unix成组链接法组织空闲盘块时是将所有�
 const short ENDFLAG=0; //Unix成组链接法的结束标志位
 const byte NORMAL=0; //普通文件
 const byte DIRECTORY=1; //目录文件
-const byte BLOCKDEVICE=2; //块设备文件
-const byte PIP=3; //管道文件
+const byte BLOCKDEVICE=2; //块设备文件 (单纯地定义,在本系统中未使用)
+const byte PIP=3; //管道文件 (单纯地定义,在本系统中未使用)
 short totalBlockNum=20449; //文件系统文件区总盘块数('磁盘'格式化的时候会用到这个常量)
 short superStack[51]; //空闲盘块号栈,采用Unix成组链接法组织空闲盘块,50个盘块为一组,superStack[0]为栈顶指针
 short currentFreeBlockNum; //系统当前的文件区空闲盘块数
-short currentUsingBlockNum; //当前正在使用的盘块组的第一个盘块的盘块号
-short stackLock; //空闲盘块号栈是临界资源,这个变量作为空闲盘块号栈的锁,值域为{0,1},值为1表示已上锁
+short stackLock; //空闲盘块号栈是临界资源,这个变量作为空闲盘块号栈的锁,值域为{0,1},值为1表示已上锁 (实际上在本系统中未使用)
 short systemFileNum; //记录系统文件总数,打印系统信息时将用到这个变量
 INODE systemiNode[640]; //系统iNode表,1#-20#盘块是文件系统的iNode区,本文件系统至多支持640个文件(含根目录)
 dirItem rootDIR[640]; //系统根目录表,21#-30#盘块是系统根目录区,根目录下至多支持640个文件(包括子目录)
