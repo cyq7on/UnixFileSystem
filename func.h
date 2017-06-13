@@ -9,7 +9,7 @@
 /* 文件系统'启动'时,将系统的引导区数据(系统当前空闲盘块数、系统空闲盘块号栈等等)加载到内存 */
 /* 每次'开机'时最先调用本函数 */
 void load(){
-	FILE *file=fopen(diskName,"r");
+	FILE *file=fopen(diskName,"rb");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -55,6 +55,7 @@ void load(){
  	stackLock=0;
 
  	/* 至此文件系统所有数据加载完毕,系统'开机'过程完成 */
+	
 }
 
 
@@ -62,7 +63,7 @@ void load(){
 /* iNode表是在内存中维护的一个系统表,这个表是系统的索引结点表,整个系统只有一张索引结点表 */
 /* 每次在'开机'时系统会从1#-20#盘块将该表拷贝到内存中,相应地,系统在'关机'时也需要将内存中的索引表写回到磁盘中 */
 void writeiNode(){
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -80,7 +81,7 @@ void writeiNode(){
    需要先调用本函数将系统中的子目录表中写回磁盘对应的盘块中
 */
 void writeCurrentDir(){
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -99,7 +100,7 @@ void writeCurrentDir(){
 		short i,j,count=0; //设置一个计数变量
 		/* 子目录占用的物理盘块数均为4 */
 		for(i=0;i<4;i++){
-			fseek(file,1024*(currentDiriNode->iaddr[i]),SEEK_SET);
+			fseek(file,1024*currentDiriNode->iaddr[i],SEEK_SET);
 			for(j=0;j<64;j++)
 				fwrite(&currentDIR[count++],sizeof(dirItem),1,file);
 		}
@@ -119,7 +120,7 @@ void shutDown(){
 	/* 将当前目录表写回磁盘 */
 	writeCurrentDir();
 
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -168,7 +169,7 @@ void openDir(char _dirName[]){
 
 				/* 下一步工作是将子目录表的所有目录项加载到系统临时目录表(tempDir)中 */
 				short j,k,count=0;
-				FILE *file=fopen(diskName,"r");
+				FILE *file=fopen(diskName,"rb");
 				if(!file){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
@@ -204,7 +205,6 @@ void openDir(char _dirName[]){
 		}
 	}
 	/* 目标项未找到 */
-	//return 404;
 	printf("未找到指定目录！\n");
 	getchar();
 }
@@ -221,7 +221,7 @@ int returnPreDir(){
 		/* 进行目录切换的时候要将系统当前目录表写回磁盘 */
 
 		/* 将系统当前目录表写回磁盘 */
-		FILE *file=fopen(diskName,"r+");
+		FILE *file=fopen(diskName,"rb+");
 		if(!file){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
@@ -247,7 +247,7 @@ int returnPreDir(){
 		*/
 
 		/* 将系统当前目录表写回磁盘 */
-		FILE *file=fopen(diskName,"r+");
+		FILE *file=fopen(diskName,"rb+");
 		if(!file){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
@@ -294,7 +294,7 @@ int returnPreDir(){
 	操作经常被使用,因而将其封装成一个函数,每次要进行此操作时可调用本函数完成
 */
 void arrayCopy(short _blockNum){
-	FILE *file=fopen(diskName,"r");
+	FILE *file=fopen(diskName,"rb");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -306,7 +306,7 @@ void arrayCopy(short _blockNum){
 
 /* 本函数实现将一个长度为512个元素的short型数组写入$DISK的指定盘块中,Unix混合索引的一级及二级索引分配时使用 */
 void arrayWrite(short _array[],short _blockNum){
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -365,14 +365,13 @@ void recycleAnBlock(short _diskNum){
 
 	/* 如果空闲盘块号栈满,则需要先将空闲盘块号栈的数据写入到新回收的这个盘块中 */
 	else{
-		FILE *file=fopen(diskName,"r+");
+		FILE *file=fopen(diskName,"rb+");
 		if(!file){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
 		}
 		fseek(file,1024*_diskNum,SEEK_SET);
 		fwrite(superStack,sizeof(short),51,file);
-		//if(file!=NULL)
 		fclose(file);
 		superStack[0]=1;
 		superStack[1]=_diskNum;
@@ -410,7 +409,7 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 			return 403;
 
 		dirItem tempOneBlockDir[64];
-		FILE *file=fopen(diskName,"r+");
+		FILE *file=fopen(diskName,"rb+");
 		if(!file){
 			printf("Error! Can't open the $DISK\n");
 			exit(0);
@@ -482,21 +481,28 @@ int creatiNode(INODE *_inode,byte _fileType,int _fileLength,byte _linkCount){
 					doubleIndirect[i]=-1;
 					singleIndirect[i]=-1;
 				}
-				for(i=0;i<512&&count>0;i++){
 
-					singleIndirect[i]=allocateAnEmptyBlock(); /* 最内层记录文件实际盘块号的各个索引块 */
+				/* singleIndirect数组存放的是索引块的块号 */
+				for(i=0;i<512;i++){
+
+					singleIndirect[i]=allocateAnEmptyBlock(); /* 申请索引块 */
 
 					for(j=0;j<512&&count>0;j++,count--){
-							doubleIndirect[j]=allocateAnEmptyBlock(); //文件实际占用的盘块
+						
+						
+							doubleIndirect[j]=allocateAnEmptyBlock(); /* 申请文件块 */
 					}
 					/*程序执行到这里,亦即是跳出了上面这个for循环,对应于两种情况
 					  第I种情况是count为0了,也就是说文件所需要的盘块已经全部分配完毕
 					  第II种情况是singleIndirect[i]这个盘块已经装满了文件的盘块号
 					  不管是哪种情况,都需要将doubleIndirect数组的数据写入到singleIndirect[i]盘块中
 					*/
-					arrayWrite(doubleIndirect,singleIndirect[i]);
+					arrayWrite(doubleIndirect,singleIndirect[i]); //把文件块号写到对应的索引块中
+					if(count==0)
+						break;
 				}
-				arrayWrite(singleIndirect,_inode->iaddr[11]);
+				arrayWrite(singleIndirect,_inode->iaddr[11]); //把索引块号写到iNode的二级索引块上
+				
 			}
 			//到二级索引的时候,文件系统支持的文件长度已经达到256MB以上了,完全支持对整个$DISK的操作
 			
@@ -527,7 +533,7 @@ int creatFile(char _fileName[],int _fileLength){
 	   文件还是普通文件,同一目录下允许子目录和其中的文件同名,对于NORMAL类文件如果出现重名则拒绝
 	   执行文件创建操作.
 	*/
-	short tempLength,i;
+	int tempLength,i;
 	if(!strcmp(currentDirName,"/")) //本系统中,根目录的项数是640,子目录的项数都是256
 		tempLength=640;
 	else
@@ -595,7 +601,7 @@ int creatFile(char _fileName[],int _fileLength){
 	currentFreeiNodeNum--; //当前可用的iNode数量减一
 
 	/* 申请目录项 */
-	short tempDirNum; //tempDirNum用来记录分配到的目录项号
+	int tempDirNum; //tempDirNum用来记录分配到的目录项号
 	for(i=0;i<tempLength;i++){
 		if(currentDIR[i].inodeNum==-1){
 			tempDirNum=i;
@@ -707,7 +713,7 @@ int deleteDir(char _dirName[]){
 				/* 对于目录文件的删除,需要检测一下currentDIR[i]是否有下属文件或子目录,有的话拒绝执行删除操作 */
 				
 				/* 将currentDIR[i]的目录表拷贝到内存 */
-				FILE *file=fopen(diskName,"r+");
+				FILE *file=fopen(diskName,"rb+");
 				if(!file){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
@@ -808,7 +814,7 @@ int deleteFile(char _fileName[]){
 					systemiNode[currentDIR[i].inodeNum].iaddr[j]=-1;
 				}
 
-				FILE *file=fopen(diskName,"r+");
+				FILE *file=fopen(diskName,"rb+");
 				if(file==NULL){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
@@ -899,7 +905,7 @@ void printCurrentDirInfo(){
 		tempLength=640;
 	else
 		tempLength=256;
-	char _fileType[20];
+	char _fileType[20]="\0";
 
 
 	printf("\n\t\t-------------------------------------\n");
@@ -912,7 +918,7 @@ void printCurrentDirInfo(){
 		else{
 			/* flag用来标识当前目录是否为空目录,flag==0表示目录为空 */
 			flag=1; 
-			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL){
+			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
 				strcpy(_fileType,"NORMAL");
 				printf("\t\t%s\t%dKB\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
 			}
@@ -1001,18 +1007,18 @@ void openFile(char _fileName[]){
 
 			/* 一次间址 */
 			if(count>0){
-				short singleIndirect[512];
-				FILE *file=fopen(diskName,"r");
+				short _singleIndirect[512];
+				FILE *file=fopen(diskName,"rb");
 				if(!file){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
 				}
 
 				fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[10],SEEK_SET);
-				fread(singleIndirect,sizeof(short),512,file);
+				fread(_singleIndirect,sizeof(short),512,file); //读取文件盘块号
 
 				for(j=0;j<512;j++){
-					if(singleIndirect[j]==-1)
+					if(_singleIndirect[j]==-1)
 						continue;
 					else if(count==0){
 						fclose(file);
@@ -1021,7 +1027,7 @@ void openFile(char _fileName[]){
 						return;
 					}
 					else{
-						printf("%d# ",singleIndirect[j]);
+						printf("%d# ",_singleIndirect[j]);
 						count--;
 					}					
 				}
@@ -1030,10 +1036,11 @@ void openFile(char _fileName[]){
 				if(count>0){
 					short doubleIndirect[512];
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
-					fread(singleIndirect,sizeof(short),512,file);
+					fread(_singleIndirect,sizeof(short),512,file); //读取索引块的块号
 					for(j=0;j<512;j++){
-						fseek(file,1024*singleIndirect[j],SEEK_SET);
-						fread(doubleIndirect,sizeof(short),512,file);
+						fseek(file,1024*_singleIndirect[j],SEEK_SET);
+
+						fread(doubleIndirect,sizeof(short),512,file); //读取文件块的块号
 
 						for(k=0;k<512;k++){
 							if(doubleIndirect[k]==-1)

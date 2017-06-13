@@ -34,7 +34,7 @@ void groupLink(){
 	*/
 	for(short i=1;i<=50;i++)
 		superStack[51-i]=30+i;//初始状态时,空闲盘块号栈存放的是成组链接法中第一组空闲盘块的盘块号,即31#-80#
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -54,12 +54,14 @@ void groupLink(){
 	   80# 130# 180#...20380# 20430# 20480#(最后一组)都是每组的第一个盘块号,除了20480#,前面的都需要记录后面一组
 	   所有可用的盘块号
 	*/
-	for(short blockNum=80;blockNum<=20380;blockNum+=50){
+	short blockNum,nextGroupBlockNum;
+	for(blockNum=80;blockNum<=20380;blockNum+=50){
 		fseek(file,1024*blockNum,SEEK_SET);
 		fwrite(&BLOCKNUM,2,1,file); //先写入栈顶指针,除了最后一组,前面各组的栈顶指针值都是50
-		for(short nextGroupBlockNum=blockNum+50;nextGroupBlockNum>blockNum;nextGroupBlockNum--)
-			fwrite(&nextGroupBlockNum,sizeof(short),1,file);
+		for(nextGroupBlockNum=blockNum+50;nextGroupBlockNum>blockNum;nextGroupBlockNum--)
+			fwrite(&nextGroupBlockNum,2,1,file);
 	}
+
 	/*
 		最后一组比较特殊,单独拿出来处理,要注意对于每个盘块号栈,superStack[1]指示的是下一组第一个盘块
 		的盘块号,这个盘块中记录了其下一组所有可用盘块的盘块号,superStack[1]同时作为一个标志位,当它为0
@@ -67,12 +69,13 @@ void groupLink(){
 	*/
 	fseek(file,1024*20430,SEEK_SET);
 	/*注意最后一组虽然也是50个盘块,但实际可用的盘块只有49个(superStack[1]用作标志位)
-							  这也意味着20431#盘块是系统无法使用的一个盘块 */
+							  这也意味着20480#盘块是系统无法使用的一个盘块 */
 	short temp=49;
 	fwrite(&temp,sizeof(short),1,file);	
 	fwrite(&ENDFLAG,sizeof(short),1,file);	//结束标志位
 	for(short blockNum=20479;blockNum>20430;blockNum--)
 		fwrite(&blockNum,sizeof(short),1,file);
+	
 	fclose(file);
 	/*至此成组链接初始化工作完成*/
 }
@@ -94,13 +97,14 @@ void initialRootDIR(){
 void format(){
 	/* 清空数据 */
 	init();
-
+	
+	
 	/* 成组链接初始化 */
 	groupLink();
 
 	/* 初始化系统根目录以及iNode */
 
-	FILE *file=fopen(diskName,"r+");
+	FILE *file=fopen(diskName,"rb+");
 	if(!file){
 		printf("Error! Can't open the $DISK\n");
 		exit(0);
@@ -126,8 +130,6 @@ void format(){
 	fseek(file,1024*21,SEEK_SET);
 	fwrite(rootDIR,sizeof(dirItem),640,file);
 	
-	
-
 	/* 关闭文件,格式化操作完成 */
 	fclose(file);
 }
