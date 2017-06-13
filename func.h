@@ -1,5 +1,5 @@
 /*
-	定义文件系统的'系统调用'
+	定义本文件系统的'系统调用' (System Call)
 */
 #ifndef _INCLUDE_XXXXXX04_H_
 #define _INCLUDE_XXXXXX04_H_
@@ -920,7 +920,7 @@ void printCurrentDirInfo(){
 			flag=1; 
 			if(systemiNode[currentDIR[i].inodeNum].fileType==NORMAL&&systemiNode[currentDIR[i].inodeNum].fileLength!=-1){
 				strcpy(_fileType,"NORMAL");
-				printf("\t\t%s\t%dKB\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
+				printf("\t\t%s\t%dByte\t%s\n",currentDIR[i].fileName,systemiNode[currentDIR[i].inodeNum].fileLength,_fileType);
 			}
 			else{
 				strcpy(_fileType,"DIRECTORY");
@@ -987,7 +987,7 @@ void openFile(char _fileName[]){
 			printf("\t 文件类型: %s",tempFileType);
 
 			/* StepIII: 打印文件大小 */
-			printf("\t 文件大小: %d KB",systemiNode[currentDIR[i].inodeNum].fileLength);
+			printf("\t 文件大小: %d Byte",systemiNode[currentDIR[i].inodeNum].fileLength);
 
 			/* StepIV: 打印文件占用的所有物理盘块号 */
 			printf("\n\t该文件占用的物理盘块号: ");

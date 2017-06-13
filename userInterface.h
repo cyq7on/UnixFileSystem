@@ -16,29 +16,29 @@ void creatFileInterface(){
 
 		printf("\t\t 1.建立文件\n");
 		printf("\t\t 2.返回主菜单\n\n");
-		printf("\t\t请输入您要操作的序号:");
+		printf("\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 		printf("\n\n");
 		if(userChoice==1){
 
 			/* 创建文件需要给出文件名和文件长度 */
 			getchar();
-			printf("\t\t请输入文件名:");
-			gets(_fileName);
+			printf("\t\t请输入文件名(字母数字下划线): ");
+			scanf("%s",_fileName);
 			while(1){
 				if(fileNameFilter(_fileName)==403){
-					printf("\t\t您输入的文件名非法(文件名只允许含有字母、数字或下划线),请您重新输入:");
-					gets(_fileName);
+					printf("\t\t您输入的文件名非法(文件名只允许含有字母、数字或下划线),请您重新输入: ");
+					scanf("%s",_fileName);
 				}
 				else
 					break;
 			}
 
-			printf("\t\t请输入文件长度(以Byte为单位):");
+			printf("\t\t请输入文件长度(以Byte为单位): ");
 			scanf("%d",&_fileLength);
 			while(1){
 				if(_fileLength<=0){
-					printf("\t\t您输入的文件长度不合法,请重新输入:");
+					printf("\t\t您输入的文件长度不合法,请重新输入: ");
 					scanf("%d",&_fileLength);
 				}
 				else
@@ -64,7 +64,6 @@ void creatFileInterface(){
 				getchar();
 				getchar();
 				printCurrentDirInfo();
-				//printf("%d",currentFreeBlockNum);
 				getchar();
 				continue;
 			}
@@ -90,7 +89,7 @@ void creatDirInterface(){
 
 		printf("\t\t 1.建立子目录\n");
 		printf("\t\t 2.返回主菜单\n\n");
-		printf("\t\t请输入您要操作的序号:");
+		printf("\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 		printf("\n\n");
 
@@ -98,15 +97,13 @@ void creatDirInterface(){
 
 			/* 创建子目录只需给出子目录名称即可 */
 			getchar();
-			printf("\t\t请输入您要创建的目录名称:");
-			//gets(_dirName);
+			printf("\t\t请输入您要创建的目录名称(字母数字下划线): ");
 			scanf("%s",_dirName);
 			while(1){
 
 				/* 子目录的命名规则和普通文件一样,因而可以与文件使用同一个过滤器 */
 				if(fileNameFilter(_dirName)==403){
-					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线),请您重新输入:");
-					//gets(_dirName);
+					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线),请您重新输入: ");
 					scanf("%s",_dirName);
 				}
 				else
@@ -115,13 +112,13 @@ void creatDirInterface(){
 
 			/* 对目录名称的合法性检查完毕,下面正是开始创建工作 */
 			stateCode=creatDir(_dirName);
-			if(stateCode==500){
+			if(stateCode==403){
 				printf("\n\t\t对不起,当前目录下已存在同名子目录,请您重新开始目录创建操作\n");
 				getchar(); //空读
 				getchar();
 				continue;
 			}
-			else if(stateCode==403){
+			else if(stateCode==500){
 				printf("\n\t\t对不起,系统当前空间不足,目录创建失败!\n");
 				getchar();
 				getchar();
@@ -132,7 +129,6 @@ void creatDirInterface(){
 				getchar();
 				getchar();
 				printCurrentDirInfo();
-				//printf("%d",currentFreeBlockNum);
 				getchar();
 				continue;
 			}
@@ -143,6 +139,8 @@ void creatDirInterface(){
 			return;
 		else{
 			printf("\t\t您的输入有误!\n");
+			getchar();
+			getchar();
 			continue;
 		}
 
@@ -160,7 +158,7 @@ void openFileInterface(){
 
 		printf("\t\t 1.打开文件\n");
 		printf("\t\t 2.返回主菜单\n\n");
-		printf("\t\t请输入您要操作的序号:");
+		printf("\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 		printf("\n\n");
 
@@ -174,7 +172,7 @@ void openFileInterface(){
 			printCurrentDirInfo();
 
 
-			printf("\t\t请输入您要打开的文件的名称:");
+			printf("\t\t请输入您要打开的文件的名称: ");
 			gets(_fileName);
 			
 			openFile(_fileName);
@@ -206,7 +204,7 @@ void deleteFileInterface(){
 
 		printf("\t\t 1.删除文件\n");
 		printf("\t\t 2.返回主菜单\n\n");
-		printf("\t\t请输入您要操作的序号:");
+		printf("\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 		printf("\n\n");
 
@@ -220,7 +218,7 @@ void deleteFileInterface(){
 			printCurrentDirInfo();
 
 
-			printf("\t\t请输入您要删除的文件的名称:");
+			printf("\t\t请输入您要删除的文件的名称: ");
 			gets(_fileName);
 
 			/* 过滤掉用户无端输入的回车 */
@@ -240,7 +238,7 @@ void deleteFileInterface(){
 					break;
 				}
 				else{
-					printf("\t\t您输入的文件名不存在,请您检查后重新输入:");
+					printf("\t\t您输入的文件名不存在,请您检查后重新输入: ");
 					gets(_fileName);
 				}
 			}
@@ -269,7 +267,7 @@ void deleteDirInterface(){
 
 		printf("\t\t 1.删除目录\n");
 		printf("\t\t 2.返回主菜单\n\n");
-		printf("\t\t请输入您要操作的序号:");
+		printf("\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 		printf("\n\n");
 
@@ -283,7 +281,7 @@ void deleteDirInterface(){
 			printCurrentDirInfo();
 
 
-			printf("\t\t请输入您要删除的目录名称:");
+			printf("\t\t请输入您要删除的目录名称: ");
 			gets(_dirName);
 
 			/* 过滤掉用户无端输入的换行 */
@@ -298,7 +296,7 @@ void deleteDirInterface(){
 			while(1){
 				stateCode=deleteDir(_dirName);
 				if(stateCode==404){
-					printf("\t\t您输入的目录名不存在,请您检查后重新输入:");
+					printf("\t\t您输入的目录名不存在,请您检查后重新输入: ");
 					gets(_dirName);
 				}
 				else if(stateCode==403){
@@ -360,7 +358,7 @@ void mainInterface(){
 	int userChoice;
 	while(1){
 		system("cls");
-		printf("\n\n\t\t\tUNIX File System\n");
+		printf("\n\n\t\t\tUNIX FILE SYSTEM\n");
 		printf("\t------------------------------------------------\n\n");
 		printf("\t\t1. 建立文件\n");
 		printf("\t\t2. 建立子目录\n");
@@ -371,10 +369,9 @@ void mainInterface(){
 		printf("\t\t7. 显示整个系统的信息\n");
 		printf("\t\t8. 切换到子目录\n");
 		printf("\t\t9. 返回到上一级目录\n");
-		printf("\t\t10. 进入Shell模式\n");
-		printf("\t\t11. 格式化磁盘\n");
-		printf("\t\t12. 关机\n");
-		printf("\n\t\t您当前处于的位置 : %s\n\n",currentDirName);
+		printf("\t\t10. 格式化磁盘\n");
+		printf("\t\t11. 关机\n");
+		printf("\n\t\t当前目录位置 : %s\n\n",currentDirName);
 		printf("\n\t\t请输入您要操作的序号: ");
 		scanf("%d",&userChoice);
 
@@ -432,18 +429,14 @@ void mainInterface(){
 		else if(userChoice==9){
 			returnPreDir();
 		}
-		/* 进入Shell模式 */
-		else if(userChoice==10){
-			/* PASS */
-		}
 
 		/* 格式化磁盘 */
-		else if(userChoice==11){
+		else if(userChoice==10){
 			int isFormatChoice;
-			printf("\n危险!格式化磁盘将抹掉系统所有数据,并还原所有系统参数,您确定要继续吗？(此操作不可逆),确定请输入1 ");
+			printf("\n格式化磁盘将抹掉系统所有数据,并还原所有系统参数,您确定要继续吗？(此操作不可逆),确定请输入1 ");
 			scanf("%d",&isFormatChoice);
 			if(isFormatChoice==1){
-				printf("\n\t\t正在格式化,请稍后...");
+				printf("\n\t\t正在格式化,请稍后...\n");
 				format();
 				load();
 				printf("\n\t\t格式化完成!摁任意键继续");
@@ -451,7 +444,7 @@ void mainInterface(){
 				getchar();
 			}
 		}
-		else if(userChoice==12){
+		else if(userChoice==11){
 
 			/* 这一步不是摆设,而是有相当重要的作用,如果不'关机'而直接关闭命令行窗口
 			   则文件系统系统在下次启动的时候将会出错
@@ -460,7 +453,7 @@ void mainInterface(){
 
 			shutDown();
 
-			printf("\n\n\t\t关机完成,摁下任意键退出");
+			printf("\n\n\t\t关机完成,摁下任意键退出\n");
 			getchar();
 			getchar();
 			exit(0);
