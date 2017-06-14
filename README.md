@@ -8,10 +8,10 @@
 	$ gcc main.c -o test
 	$ ./test
 
-## 源文件描述
+## 源文件
 1. <code>data_structure.h</code>           定义文件系统的数据结构,包含系统的所有全局变量
 2. <code>format.h</code>                   定义文件系统执行格式化操作时所需要的函数
-3. <code>func.h</code>                     定义本文件系统的全部函数
+3. <code>func.h</code>                     定义文件系统的操作函数
 4. <code>userInterface.h</code>            控制台界面
 5. <code>main.c</code>                     主函数
 
