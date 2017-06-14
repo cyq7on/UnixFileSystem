@@ -1,4 +1,4 @@
-#ifndef _INCLUDE_XXXXXX05_H_
+﻿#ifndef _INCLUDE_XXXXXX05_H_
 #define _INCLUDE_XXXXXX05_H_
 
 #include "data_structure.h"
@@ -11,7 +11,7 @@ void creatFileInterface(){
 	int _fileLength,stateCode;
 	
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\t\t建立文件\n\n");
 
 		printf("\t\t 1.建立文件\n");
@@ -84,7 +84,7 @@ void creatDirInterface(){
 	char _dirName[50];
 	
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\t\t建立子目录\n\n");
 
 		printf("\t\t 1.建立子目录\n");
@@ -153,7 +153,7 @@ void openFileInterface(){
 	char _fileName[50];
 	
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\t\t打开文件\n\n");
 
 		printf("\t\t 1.打开文件\n");
@@ -199,7 +199,7 @@ void deleteFileInterface(){
 	char _fileName[50];
 	
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\t\t删除文件\n\n");
 
 		printf("\t\t 1.删除文件\n");
@@ -262,7 +262,7 @@ void deleteDirInterface(){
 	char _dirName[50];
 	
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\t\t删除目录\n\n");
 
 		printf("\t\t 1.删除目录\n");
@@ -297,7 +297,8 @@ void deleteDirInterface(){
 				stateCode=deleteDir(_dirName);
 				if(stateCode==404){
 					printf("\t\t您输入的目录名不存在,请您检查后重新输入: ");
-					gets(_dirName);
+					getchar();
+					break;
 				}
 				else if(stateCode==403){
 					printf("\t\t您要删除的目录下包含有文件或子目录,无法删除该目录");
@@ -357,7 +358,7 @@ void mainInterface(){
 
 	int userChoice;
 	while(1){
-		system("cls");
+		system("clear");
 		printf("\n\n\t\t\tUNIX FILE SYSTEM\n");
 		printf("\t------------------------------------------------\n\n");
 		printf("\t\t1. 建立文件\n");
@@ -402,13 +403,13 @@ void mainInterface(){
 
 		/* 显示当前目录信息 */
 		else if(userChoice==6){
-			system("cls");
+			system("clear");
 			printDirInterface();
 		}
 
 		/* 显示系统当前信息 */
 		else if(userChoice==7){
-			system("cls");
+			system("clear");
 			printSystemInfoInterface();
 		}
 

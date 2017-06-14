@@ -1,4 +1,4 @@
-/*
+﻿/*
 	定义本文件系统的'系统调用' (System Call)
 */
 #ifndef _INCLUDE_XXXXXX04_H_
@@ -579,7 +579,10 @@ int creatFile(char _fileName[],int _fileLength){
 	/* 二次间址分配 */
 	else if(fileLength>512+10&&fileLength<=512*512+512+10)
 		needIndexBlockNum=512+1+1;
-
+	/* 再多就直接告诉用户空间不足就行了,因而二级分配可以管理的空间已经达到256MB+256KB+10KB了 */
+	/* 这里的else分支不能省略,省略会有内存错误,必须将needIndexBlockNum变量初始化 */
+	else
+		return 403;
 	//......
 	//本系统最多到二次间址分配方式
 
