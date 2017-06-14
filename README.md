@@ -6,7 +6,6 @@
 ## 使用
    ''' c
    		git clone git@github.com:Sun-yq/UnixFileSystem.git
-   		cd ~/UnixFileSystem
    		gcc main.c -o test
    		./test
    '''
