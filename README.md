@@ -1,7 +1,7 @@
 # Unix File System
 
 
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这是一个简单的UNIX文件系统的模拟,通过该实例可以帮助您对UNIX文件系统的组织方式及实现机制有一个较为清晰的认识.在本系统中,对于空闲盘块的组织采用UNIX System V的成组连接法,对于索引结点的组织采用增量式索引组织方式. 对于磁盘的模拟是通过建立一个写满空格的20971520KB的$DISK文件实现的,通过fseek函数来模拟磁盘磁头的移动. 
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;文件系统是OS中一个非常重要且庞大的模块,实现一个完整的文件系统并非是几千行代码可以完成的,这是一个简单的UNIX文件系统的模拟,通过该实例可以帮助您对UNIX文件系统的组织方式及实现机制有一个较为清晰的认识.在本系统中,对于空闲盘块的组织采用UNIX System V的成组连接法,对于索引结点的组织采用增量式索引组织方式. 对于磁盘的模拟是通过建立一个写满空格的20971520KB的$DISK文件实现的,通过fseek函数来模拟磁盘磁头的移动. 
 
 ## 使用
 	$ git clone git@github.com:Sun-yq/UnixFileSystem.git
@@ -20,4 +20,3 @@
 
 ## License
 MIT
-
