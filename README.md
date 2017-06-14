@@ -28,7 +28,7 @@
 * 如果您发现本文件系统出现了一些错误您可以通过‘格式化’操作来还原整个文件系统
 
 ## Contact
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这是我的课程设计,时间很短所以整个系统还有一些问题,如果您在使用过程中发现错误请与我联系
+&nbsp;&nbsp;&nbsp;&nbsp;这是我的课程设计,时间很短所以整个系统还有一些问题,如果您在使用过程中发现错误或者其它问题请与我联系
 * Email: admin@sunyunqiang.com
 
 ## License
