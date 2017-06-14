@@ -15,6 +15,8 @@
 4. <code>userInterface.h</code>            控制台界面
 5. <code>main.c</code>                     主函数
 
+![Image text](https://github.com/Sun-yq/UnixFileSystem/blob/master/PIC.png)
+
 ## 概述
 * 0# 系统引导扇区,该盘块记录空闲盘块号栈、系统可用索引结点数、系统文件总数等信息
 * 1#-20# 系统索引结点区
