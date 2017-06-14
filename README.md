@@ -9,11 +9,11 @@
 	$ ./test
 
 ## 源文件描述
-1. '''data_structure.h'''  //定义文件系统的数据结构,包含系统的所有全局变量
-2. '''format.h'''  //定义文件系统执行格式化操作时所需要的函数
-3. '''func.h'''  //定义本文件系统的全部函数
-4. '''userInterface.h''' //前台界面
-5. '''main.c''' //主函数
+1. <code>data_structure.h</code>  //定义文件系统的数据结构,包含系统的所有全局变量
+2. <code>format.h</code>  //定义文件系统执行格式化操作时所需要的函数
+3. <code>func.h</code>  //定义本文件系统的全部函数
+4. <code>userInterface.h</code> //前台界面
+5. <code>main.c</code> //主函数
 
 ## 概述
 * 0# 系统引导扇区,该盘块记录空闲盘块号栈、系统可用索引节点数、系统文件总数等信息
