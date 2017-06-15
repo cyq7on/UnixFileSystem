@@ -951,6 +951,11 @@ void printSystemInfo(){
 /* 合法的文件名: 字母、数字或下划线 */
 /* 返回: 操作状态码: 403: 文件名非法,操作被拒绝 0: 文件名合格,操作成功 */
 int fileNameFilter(char _fileName[]){
+	int length=0;
+	for(char *p=&_fileName[0];*p!='\0';p++)
+		length++;
+	if(length>14)
+		return 403;
 	for(char *p=&_fileName[0];*p!='\0';p++){
 		if(!((*p>='0'&&*p<='9') || (*p>='a'&&*p<='z') || (*p>='A'&&*p<='Z') || (*p=='_')))
 			return 403;
@@ -1000,6 +1005,7 @@ void openFile(char _fileName[]){
 			/* 考虑到Unix增量式索引组织方式,因而这里的工作相对繁琐一些 */
 
 			/* 直接地址块 */
+			printf("\n\n直接地址块: ");
 			for(j=0;j<10;j++,count--){
 				if(systemiNode[currentDIR[i].inodeNum].iaddr[j]==-1||count==0){
 					getchar();
@@ -1017,7 +1023,8 @@ void openFile(char _fileName[]){
 					printf("Error! Can't open the $DISK\n");
 					exit(0);
 				}
-
+				printf("\n\n一次索引块为 %d #\n",systemiNode[currentDIR[i].inodeNum].iaddr[10]);
+				printf("\n一级索引中的文件盘块有: ");
 				fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[10],SEEK_SET);
 				fread(_singleIndirect,sizeof(short),512,file); //读取文件盘块号
 
@@ -1039,11 +1046,20 @@ void openFile(char _fileName[]){
 				/* 二次间址 */
 				if(count>0){
 					short doubleIndirect[512];
+					printf("\n\n二次索引块为 %d #\n",systemiNode[currentDIR[i].inodeNum].iaddr[11]);
+					
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
 					fread(_singleIndirect,sizeof(short),512,file); //读取索引块的块号
+					int _flag=0;
 					for(j=0;j<512;j++){
 						fseek(file,1024*_singleIndirect[j],SEEK_SET);
-
+						if(count==0){
+								getchar();
+								
+								return;
+						}
+						printf("\n\n二次索引块的索引块号为 %d #\n",_singleIndirect[j]);
+						printf("\n二次索引的文件块块号为: ");
 						fread(doubleIndirect,sizeof(short),512,file); //读取文件块的块号
 
 						for(k=0;k<512;k++){

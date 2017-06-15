@@ -7,11 +7,11 @@
 /* '建立'文件界面 */
 void creatFileInterface(){
 	int userChoice;
-	char _fileName[50];
+	char _fileName[1000];
 	int _fileLength,stateCode;
 	
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\t\t建立文件\n\n");
 
 		printf("\t\t 1.建立文件\n");
@@ -27,16 +27,36 @@ void creatFileInterface(){
 			scanf("%s",_fileName);
 			while(1){
 				if(fileNameFilter(_fileName)==403){
-					printf("\t\t您输入的文件名非法(文件名只允许含有字母、数字或下划线),请您重新输入: ");
+					printf("\t\t您输入的文件名非法(文件名只允许含有字母、数字或下划线，文件长度小于等于14个字符),请您重新输入: ");
 					scanf("%s",_fileName);
 				}
 				else
 					break;
 			}
-
-			printf("\t\t请输入文件长度(以Byte为单位): ");
-			scanf("%d",&_fileLength);
+			
+			
+			//scanf("%d",&_fileLength);
+			char tempInput[1000];
 			while(1){
+				
+					RRR:
+					printf("\n\t\t请输入文件长度(以Byte为单位): ");
+					scanf("%s",tempInput);
+					
+					for(char *p=&tempInput[0];*p!='\0';p++){
+						if(!(*p>='0'&&*p<='9')){
+							
+							printf("\t\t您的输入非法,请您看清楚是输入数字！: ");
+							getchar();
+							goto RRR;
+						}
+					}
+					
+					//else
+
+				
+				_fileLength=atoi(tempInput);
+				
 				if(_fileLength<=0){
 					printf("\t\t您输入的文件长度不合法,请重新输入: ");
 					scanf("%d",&_fileLength);
@@ -72,7 +92,10 @@ void creatFileInterface(){
 			return;
 		else{
 			printf("\t\t您的输入有误!\n");
-			continue;
+				getchar();
+				getchar();
+				getchar();
+			return;
 		}
 					
 	}
@@ -84,7 +107,7 @@ void creatDirInterface(){
 	char _dirName[50];
 	
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\t\t建立子目录\n\n");
 
 		printf("\t\t 1.建立子目录\n");
@@ -103,7 +126,7 @@ void creatDirInterface(){
 
 				/* 子目录的命名规则和普通文件一样,因而可以与文件使用同一个过滤器 */
 				if(fileNameFilter(_dirName)==403){
-					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线),请您重新输入: ");
+					printf("\t\t您输入的子目录名称非法(子目录名只允许含有字母、数字或下划线,并且长度在14位以下),请您重新输入: ");
 					scanf("%s",_dirName);
 				}
 				else
@@ -141,7 +164,7 @@ void creatDirInterface(){
 			printf("\t\t您的输入有误!\n");
 			getchar();
 			getchar();
-			continue;
+			return;
 		}
 
 	}
@@ -153,7 +176,7 @@ void openFileInterface(){
 	char _fileName[50];
 	
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\t\t打开文件\n\n");
 
 		printf("\t\t 1.打开文件\n");
@@ -185,7 +208,8 @@ void openFileInterface(){
 			return;
 		else{
 			printf("\t\t您的输入有误!\n");
-			continue;
+			getchar();
+			return;
 		}
 
 	}
@@ -199,7 +223,7 @@ void deleteFileInterface(){
 	char _fileName[50];
 	
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\t\t删除文件\n\n");
 
 		printf("\t\t 1.删除文件\n");
@@ -237,9 +261,21 @@ void deleteFileInterface(){
 					getchar();
 					break;
 				}
+				
 				else{
+					int sss=0;
 					printf("\t\t您输入的文件名不存在,请您检查后重新输入: ");
-					gets(_fileName);
+					while(1){
+						sss++;
+						gets(_fileName);
+						if(_fileName[0]=='\0'){
+						gets(_fileName);
+						continue;
+						if(sss==4)
+							return;
+					}
+				break;
+			}
 				}
 			}
 
@@ -248,9 +284,9 @@ void deleteFileInterface(){
 		else if(userChoice==2)
 			return;
 		else{
-			printf("\t\t您的输入有误!摁下回车继续操作\n");
+			printf("\t\t您的输入有误!\n");
 			getchar();
-			continue;
+			return;
 		}
 
 	}
@@ -262,7 +298,7 @@ void deleteDirInterface(){
 	char _dirName[50];
 	
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\t\t删除目录\n\n");
 
 		printf("\t\t 1.删除目录\n");
@@ -355,10 +391,10 @@ void printSystemInfoInterface(){
 /* 系统主界面 */
 void mainInterface(){
 	
-
+	MAINH:
 	int userChoice;
 	while(1){
-		system("clear");
+		system("cls");
 		printf("\n\n\t\t\tUNIX FILE SYSTEM\n");
 		printf("\t------------------------------------------------\n\n");
 		printf("\t\t1. 建立文件\n");
@@ -403,13 +439,13 @@ void mainInterface(){
 
 		/* 显示当前目录信息 */
 		else if(userChoice==6){
-			system("clear");
+			system("cls");
 			printDirInterface();
 		}
 
 		/* 显示系统当前信息 */
 		else if(userChoice==7){
-			system("clear");
+			system("cls");
 			printSystemInfoInterface();
 		}
 
