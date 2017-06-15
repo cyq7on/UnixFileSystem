@@ -817,7 +817,19 @@ int deleteFile(char _fileName[]){
 					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[j]);
 					systemiNode[currentDIR[i].inodeNum].iaddr[j]=-1;
 				}
+				if(count==0){
+						/* 回收iNode */
+						systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+						currentFreeiNodeNum++;
 
+						/* 清除目录项 */
+						currentDIR[i].inodeNum=-1;
+
+						/* 系统文件总数减一 */
+						systemFileNum--;
+
+						return 0;
+				}
 				FILE *file=fopen(diskName,"rb+");
 				if(file==NULL){
 					printf("Error! Can't open the $DISK\n");
@@ -830,7 +842,7 @@ int deleteFile(char _fileName[]){
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[10],SEEK_SET);
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++,count--){
-						if(count==0){
+						if(tempStack[j]==-1){
 							/* 回收一次索引块 */
 							recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[10]);
 
@@ -850,23 +862,61 @@ int deleteFile(char _fileName[]){
 						recycleAnBlock(tempStack[j]);
 					}
 				}
+				if(count==0){
+					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[10]);
 
+							/* 回收iNode */
+							systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+							currentFreeiNodeNum++;
+
+							/* 清除目录项 */
+							currentDIR[i].inodeNum=-1;
+
+							/* 系统文件总数减一 */
+							systemFileNum--;
+							return 0;
+				}
+						
+				
 				/* 二次间址块的回收 */
 				if(count>0){
+					recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[10]);
+
+							
+			
 					short innerTempStack[512]; //内层临时栈
 					fseek(file,1024*systemiNode[currentDIR[i].inodeNum].iaddr[11],SEEK_SET);
+					/* tempStack存放的是索引块的块号 */
 					fread(tempStack,sizeof(short),512,file);
 					for(j=0;j<512;j++){
-						fseek(file,1024*tempStack[j],SEEK_SET);
-						fread(innerTempStack,sizeof(short),512,file);
-						for(k=0;k<512;k++,count--){
-							if(count==0){
-								/* 回收最后一个文件块 */
-								recycleAnBlock(innerTempStack[k]);
+						if(tempStack[j]==-1){
+							recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[11]);
 
+								/* 回收iNode */
+								systemiNode[currentDIR[i].inodeNum].fileLength=-1;
+								currentFreeiNodeNum++;
+
+								/* 清除目录项 */
+								currentDIR[i].inodeNum=-1;
+
+								/* 系统文件总数减一 */
+								systemFileNum--;
+
+								fclose(file);
+								return 0;
+						}
+						fseek(file,1024*tempStack[j],SEEK_SET);
+						/* innerTempStack是文件块的块号 */
+						fread(innerTempStack,sizeof(short),512,file);
+
+
+
+						for(k=0;k<512;k++,count--){
+							if(innerTempStack[k]==-1||count==0){
+								
 								/* 回收当前的内层索引块 */
 								recycleAnBlock(tempStack[j]);
-
+								
 								/* 回收二次间址块 */
 								recycleAnBlock(systemiNode[currentDIR[i].inodeNum].iaddr[11]);
 
@@ -885,6 +935,10 @@ int deleteFile(char _fileName[]){
 							}
 							recycleAnBlock(innerTempStack[k]);
 						}
+
+
+
+
 
 						/* 回收内层索引块 */
 						recycleAnBlock(tempStack[j]);

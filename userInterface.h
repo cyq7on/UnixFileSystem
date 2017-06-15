@@ -263,19 +263,11 @@ void deleteFileInterface(){
 				}
 				
 				else{
-					int sss=0;
+					
 					printf("\t\t您输入的文件名不存在,请您检查后重新输入: ");
-					while(1){
-						sss++;
-						gets(_fileName);
-						if(_fileName[0]=='\0'){
-						gets(_fileName);
-						continue;
-						if(sss==4)
-							return;
-					}
-				break;
-			}
+					getchar();
+					break;
+			
 				}
 			}
 
@@ -391,7 +383,7 @@ void printSystemInfoInterface(){
 /* 系统主界面 */
 void mainInterface(){
 	
-	MAINH:
+	
 	int userChoice;
 	while(1){
 		system("cls");
