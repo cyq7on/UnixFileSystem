@@ -4,7 +4,7 @@
 #include "userInterface.h"
 
 int main(){
-	format();
+	//format();
 	load();
 	mainInterface();
 	return 0;
