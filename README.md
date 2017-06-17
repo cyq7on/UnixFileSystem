@@ -6,26 +6,26 @@
 ![Image text](https://github.com/Sun-yq/UnixFileSystem/blob/master/README_PIC.png)
 
 
-## 使用
+## Install
 	$ git clone git@github.com:Sun-yq/UnixFileSystem.git
 	$ gcc main.c -o test
 	$ ./test
 
-## 源文件
+## Source Files
 1. <code>data_structure.h</code>           定义文件系统的数据结构,包含系统的所有全局变量
 2. <code>format.h</code>                   定义文件系统执行格式化操作时所需要的函数
 3. <code>func.h</code>                     定义文件系统的操作函数
 4. <code>userInterface.h</code>            控制台界面
 5. <code>main.c</code>                     主函数
 
-## 概述
+## Information
 * 0# 系统引导扇区,该盘块记录空闲盘块号栈、系统可用索引结点数、系统文件总数等信息
 * 1#-20# 系统索引结点区
 * 21#-30# 系统根目录区
 * 31#-20480# 系统文件区
 * 本系统默认磁盘块大小为1KB
 
-## 注意
+## Attention
 * 退出程序时如果您希望您刚刚在这个模拟的文件系统中建立的文件得以保存的话,请您通过先执行'关机'后再关闭界面
 * 执行'关机'操作,则系统会将内存中的数据写回磁盘系统区中
 * 如果您发现本文件系统出现了一些错误您可以通过'格式化'操作来还原整个文件系统
@@ -35,4 +35,4 @@
 * Email: admin@sunyunqiang.com
 
 ## License
-MIT
+Licensed under the [MIT](LICENSE.txt) License.
